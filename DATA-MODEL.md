@@ -7,7 +7,7 @@ Data model for task-canvas – a multi-view project management prototype with li
 ```mermaid
 erDiagram
     Workspace ||--o{ Project : contains
-    Workspace ||--o{ Member : has
+    Workspace ||--o{ User : has
     Workspace ||--o{ Priority : defines
     
     Project ||--o{ Task : contains
@@ -16,22 +16,16 @@ erDiagram
     Project ||--o{ WikiPage : contains
     Project ||--o{ View : has
     
-    Task ||--o| TaskCanvasPosition : has
     Task ||--o{ Task : subtasks
     Task }o--|| Status : has
     Task }o--o| Priority : has
-    Task }o--o| Member : assigned_to
+    Task }o--o| User : assigned_to
     Task ||--o{ Comment : has
-    Task ||--o{ Attachment : has
-    Task ||--o{ Activity : tracks
     Task }o--o{ Label : tagged_with
     Task }o--o{ WikiPage : linked_to
     
     WikiPage ||--o{ WikiPage : children
     WikiPage ||--o{ Comment : has
-    WikiPage ||--o{ Attachment : has
-    
-    Member }o--|| User : is
     
     Workspace {
         uuid id PK
@@ -49,26 +43,16 @@ erDiagram
     Task {
         uuid id PK
         uuid project_id FK
-        uuid parent_id FK
         string title
-        text description
         uuid status_id FK
         uuid assignee_id FK
-        date due_date
-    }
-    
-    TaskCanvasPosition {
-        uuid id PK
-        uuid task_id FK
-        float x
-        float y
-        int z_index
+        float canvas_x
+        float canvas_y
     }
     
     WikiPage {
         uuid id PK
         uuid project_id FK
-        uuid parent_id FK
         string title
         text content
     }
@@ -80,27 +64,6 @@ erDiagram
         enum type
         jsonb filters
     }
-```
-
-## Overview
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                          Workspace                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐        │
-│  │ Project  │  │ Project  │  │ Project  │  │   ...    │        │
-│  └────┬─────┘  └──────────┘  └──────────┘  └──────────┘        │
-│       │                                                         │
-│  ┌────┴────────────────────────────────────┐                   │
-│  │                                          │                   │
-│  ▼                                          ▼                   │
-│  Tasks ◄──────────────────────────────► Wiki Pages             │
-│  │                                          │                   │
-│  ├── List View                              └── Linked Tasks   │
-│  ├── Canvas View (x, y positions)                              │
-│  └── Grouped by Status/Priority/Label                          │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Core Entities
@@ -152,31 +115,17 @@ The central work item entity.
 | `description` | text | Rich text / markdown content |
 | `status_id` | uuid | FK → Status |
 | `priority_id` | uuid | FK → Priority |
-| `assignee_id` | uuid | FK → Member |
-| `reporter_id` | uuid | FK → Member |
+| `assignee_id` | uuid | FK → User |
 | `start_date` | date | Planned start |
 | `due_date` | date | Deadline |
 | `completed_at` | timestamp | When marked done |
 | `estimate_hours` | decimal | Time estimate |
 | `sort_order` | integer | Position in list view |
+| `canvas_x` | float | X coordinate for canvas view |
+| `canvas_y` | float | Y coordinate for canvas view |
+| `canvas_z_index` | integer | Layer order on canvas |
 | `is_archived` | boolean | Soft delete |
 | `created_at` | timestamp | |
-| `updated_at` | timestamp | |
-
-### TaskCanvasPosition
-
-Stores x/y coordinates for the canvas view (separate from task to keep task entity clean).
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | uuid | Primary key |
-| `task_id` | uuid | FK → Task (unique) |
-| `view_id` | uuid | FK → View (optional, for multiple canvas views) |
-| `x` | float | X coordinate |
-| `y` | float | Y coordinate |
-| `width` | float | Card width (optional) |
-| `height` | float | Card height (optional) |
-| `z_index` | integer | Layer order |
 | `updated_at` | timestamp | |
 
 ### Status
@@ -227,29 +176,18 @@ Many-to-many relationship between tasks and labels.
 | `task_id` | uuid | FK → Task |
 | `label_id` | uuid | FK → Label |
 
-### Member
+### User
 
-User membership in a workspace.
+Users who can be assigned to tasks.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `id` | uuid | Primary key |
 | `workspace_id` | uuid | FK → Workspace |
-| `user_id` | uuid | FK → User |
-| `role` | enum | `owner` \| `admin` \| `member` \| `guest` |
-| `display_name` | string | Name shown in workspace |
-| `joined_at` | timestamp | |
-
-### User
-
-Authentication entity (can belong to multiple workspaces).
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | uuid | Primary key |
 | `email` | string | Unique email |
 | `name` | string | Display name |
 | `avatar_url` | string | Profile image |
+| `role` | enum | `owner` \| `admin` \| `member` \| `guest` |
 | `created_at` | timestamp | |
 
 ## Wiki System
@@ -269,8 +207,8 @@ Documentation pages linked to a project.
 | `icon` | string | Emoji or icon |
 | `is_locked` | boolean | Prevent edits |
 | `sort_order` | integer | Position in sidebar |
-| `created_by` | uuid | FK → Member |
-| `updated_by` | uuid | FK → Member |
+| `created_by` | uuid | FK → User |
+| `updated_by` | uuid | FK → User |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |
 
@@ -283,7 +221,7 @@ Links between wiki pages and tasks (bidirectional references).
 | `id` | uuid | Primary key |
 | `page_id` | uuid | FK → WikiPage |
 | `task_id` | uuid | FK → Task |
-| `created_by` | uuid | FK → Member |
+| `created_by` | uuid | FK → User |
 | `created_at` | timestamp | |
 
 ## Views & Filters
@@ -303,8 +241,8 @@ Saved views with custom filters and display settings.
 | `group_by` | string | Grouping field |
 | `display_fields` | jsonb | Visible columns/fields |
 | `is_default` | boolean | Default view for project |
-| `is_shared` | boolean | Visible to all members |
-| `created_by` | uuid | FK → Member |
+| `is_shared` | boolean | Visible to all users |
+| `created_by` | uuid | FK → User |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |
 
@@ -319,7 +257,7 @@ Saved views with custom filters and display settings.
 }
 ```
 
-## Activity & Comments
+## Comments
 
 ### Comment
 
@@ -332,68 +270,23 @@ Discussion on tasks or wiki pages.
 | `page_id` | uuid | FK → WikiPage (nullable) |
 | `parent_id` | uuid | FK → Comment (for threads) |
 | `content` | text | Comment body |
-| `created_by` | uuid | FK → Member |
+| `created_by` | uuid | FK → User |
 | `created_at` | timestamp | |
 | `updated_at` | timestamp | |
 
-### Activity
+## Attachments (Future)
 
-Audit log for changes.
+Attachments can be added later when file upload functionality is needed.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | uuid | Primary key |
-| `project_id` | uuid | FK → Project |
-| `task_id` | uuid | FK → Task (nullable) |
-| `page_id` | uuid | FK → WikiPage (nullable) |
-| `actor_id` | uuid | FK → Member |
-| `action` | string | e.g., `created`, `updated`, `moved`, `commented` |
-| `field` | string | Changed field name |
-| `old_value` | jsonb | Previous value |
-| `new_value` | jsonb | New value |
-| `created_at` | timestamp | |
+## Analytics (Future)
 
-## Attachments
-
-### Attachment
-
-Files attached to tasks or wiki pages.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | uuid | Primary key |
-| `task_id` | uuid | FK → Task (nullable) |
-| `page_id` | uuid | FK → WikiPage (nullable) |
-| `filename` | string | Original filename |
-| `file_url` | string | Storage URL |
-| `file_size` | integer | Size in bytes |
-| `mime_type` | string | MIME type |
-| `uploaded_by` | uuid | FK → Member |
-| `created_at` | timestamp | |
-
-## Analytics (Aggregated)
-
-### DailyProjectStats
-
-Pre-computed daily statistics for analytics dashboards.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | uuid | Primary key |
-| `project_id` | uuid | FK → Project |
-| `date` | date | Statistics date |
-| `total_tasks` | integer | Total task count |
-| `completed_tasks` | integer | Done tasks |
-| `created_tasks` | integer | Tasks created that day |
-| `tasks_by_status` | jsonb | `{ "status_id": count }` |
-| `tasks_by_priority` | jsonb | `{ "priority_id": count }` |
-| `tasks_by_assignee` | jsonb | `{ "member_id": count }` |
+Analytics aggregations can be computed on-the-fly from the task data for the prototype. Pre-computed stats tables like `DailyProjectStats` can be added when performance requires it.
 
 ## Entity Relationships
 
 ```
 Workspace 1──N Project
-Workspace 1──N Member
+Workspace 1──N User
 Workspace 1──N Priority
 
 Project 1──N Task
@@ -401,33 +294,25 @@ Project 1──N Status
 Project 1──N Label
 Project 1──N WikiPage
 Project 1──N View
-Project 1──N DailyProjectStats
 
 Task N──1 Status
 Task N──1 Priority
-Task N──1 Member (assignee)
-Task N──1 Member (reporter)
+Task N──1 User (assignee)
 Task 1──N Task (subtasks)
 Task N──M Label (via TaskLabel)
-Task 1──1 TaskCanvasPosition
 Task 1──N Comment
-Task 1──N Attachment
-Task 1──N Activity
 Task N──M WikiPage (via WikiPageTaskLink)
 
 WikiPage 1──N WikiPage (children)
 WikiPage 1──N Comment
-WikiPage 1──N Attachment
 
-Member N──1 User
-View N──1 Member (created_by)
-Comment N──1 Member (created_by)
-Activity N──1 Member (actor)
+View N──1 User (created_by)
+Comment N──1 User (created_by)
 ```
 
-## Indexes
+## Indexes (PostgreSQL)
 
-Recommended indexes for common queries:
+For when migrating to PostgreSQL:
 
 ```sql
 -- Task lookups
@@ -437,25 +322,34 @@ CREATE INDEX idx_tasks_assignee_id ON tasks(assignee_id);
 CREATE INDEX idx_tasks_due_date ON tasks(due_date);
 CREATE INDEX idx_tasks_project_sequence ON tasks(project_id, sequence_id);
 
--- Canvas positions
-CREATE UNIQUE INDEX idx_canvas_task_view ON task_canvas_positions(task_id, view_id);
-
--- Activity feed
-CREATE INDEX idx_activity_project_created ON activity(project_id, created_at DESC);
-CREATE INDEX idx_activity_task_id ON activity(task_id);
-
 -- Wiki
 CREATE INDEX idx_wiki_pages_project ON wiki_pages(project_id);
 CREATE INDEX idx_wiki_pages_parent ON wiki_pages(parent_id);
 
--- Full-text search (PostgreSQL)
+-- Full-text search
 CREATE INDEX idx_tasks_search ON tasks USING gin(to_tsvector('english', title || ' ' || COALESCE(description, '')));
 CREATE INDEX idx_wiki_search ON wiki_pages USING gin(to_tsvector('english', title || ' ' || COALESCE(content, '')));
 ```
 
 ## Notes
 
-- **Canvas View**: The `TaskCanvasPosition` table is separate to allow different positions per view and keep the Task entity clean for list/board views.
-- **Soft Deletes**: Use `is_archived` flags rather than hard deletes to preserve history and allow restoration.
-- **Multi-tenancy**: Workspace provides isolation; all queries should be scoped by `workspace_id` or `project_id`.
-- **Real-time Updates**: Consider WebSocket subscriptions per project for live collaboration on the canvas.
+- **JSON-first**: Start with static JSON files for rapid frontend prototyping, migrate to PostgreSQL later.
+- **Canvas coordinates**: Stored directly on Task (`canvas_x`, `canvas_y`, `canvas_z_index`) for simplicity.
+- **Soft Deletes**: Use `is_archived` flags rather than hard deletes to preserve history.
+- **IDs**: Use UUIDs for easier JSON generation and future database migration.
+
+## JSON File Structure (for prototype)
+
+```
+/data
+├── workspace.json
+├── users.json
+├── projects.json
+├── statuses.json
+├── priorities.json
+├── labels.json
+├── tasks.json
+├── wiki-pages.json
+├── views.json
+└── comments.json
+```
