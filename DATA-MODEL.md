@@ -16,7 +16,6 @@ erDiagram
     Project ||--o{ WikiPage : contains
     Project ||--o{ View : has
     
-    Task ||--o{ Task : subtasks
     Task }o--|| Status : has
     Task }o--o| Priority : has
     Task }o--o| User : assigned_to
@@ -24,7 +23,6 @@ erDiagram
     Task }o--o{ Label : tagged_with
     Task }o--o{ WikiPage : linked_to
     
-    WikiPage ||--o{ WikiPage : children
     WikiPage ||--o{ Comment : has
     
     Workspace {
@@ -109,7 +107,6 @@ The central work item entity.
 |-------|------|-------------|
 | `id` | uuid | Primary key |
 | `project_id` | uuid | FK → Project |
-| `parent_id` | uuid | FK → Task (for subtasks) |
 | `sequence_id` | integer | Auto-increment per project |
 | `title` | string | Task title |
 | `description` | text | Rich text / markdown content |
@@ -200,7 +197,6 @@ Documentation pages linked to a project.
 |-------|------|-------------|
 | `id` | uuid | Primary key |
 | `project_id` | uuid | FK → Project |
-| `parent_id` | uuid | FK → WikiPage (for hierarchy) |
 | `title` | string | Page title |
 | `slug` | string | URL-friendly identifier |
 | `content` | text | Markdown/rich text content |
@@ -268,7 +264,6 @@ Discussion on tasks or wiki pages.
 | `id` | uuid | Primary key |
 | `task_id` | uuid | FK → Task (nullable) |
 | `page_id` | uuid | FK → WikiPage (nullable) |
-| `parent_id` | uuid | FK → Comment (for threads) |
 | `content` | text | Comment body |
 | `created_by` | uuid | FK → User |
 | `created_at` | timestamp | |
@@ -298,12 +293,10 @@ Project 1──N View
 Task N──1 Status
 Task N──1 Priority
 Task N──1 User (assignee)
-Task 1──N Task (subtasks)
 Task N──M Label (via TaskLabel)
 Task 1──N Comment
 Task N──M WikiPage (via WikiPageTaskLink)
 
-WikiPage 1──N WikiPage (children)
 WikiPage 1──N Comment
 
 View N──1 User (created_by)
@@ -324,7 +317,6 @@ CREATE INDEX idx_tasks_project_sequence ON tasks(project_id, sequence_id);
 
 -- Wiki
 CREATE INDEX idx_wiki_pages_project ON wiki_pages(project_id);
-CREATE INDEX idx_wiki_pages_parent ON wiki_pages(parent_id);
 
 -- Full-text search
 CREATE INDEX idx_tasks_search ON tasks USING gin(to_tsvector('english', title || ' ' || COALESCE(description, '')));
