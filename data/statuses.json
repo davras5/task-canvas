@@ -1,0 +1,128 @@
+[
+  {
+    "id": "status-001",
+    "project_id": "proj-001",
+    "name": "To Do",
+    "color": "#6b7280",
+    "category": "todo",
+    "sort_order": 1,
+    "is_default": true
+  },
+  {
+    "id": "status-002",
+    "project_id": "proj-001",
+    "name": "Doing",
+    "color": "#3b82f6",
+    "category": "in_progress",
+    "sort_order": 2,
+    "is_default": false
+  },
+  {
+    "id": "status-003",
+    "project_id": "proj-001",
+    "name": "Done",
+    "color": "#22c55e",
+    "category": "done",
+    "sort_order": 3,
+    "is_default": false
+  },
+  {
+    "id": "status-011",
+    "project_id": "proj-002",
+    "name": "Backlog",
+    "color": "#9ca3af",
+    "category": "backlog",
+    "sort_order": 1,
+    "is_default": true
+  },
+  {
+    "id": "status-012",
+    "project_id": "proj-002",
+    "name": "In Progress",
+    "color": "#8b5cf6",
+    "category": "in_progress",
+    "sort_order": 2,
+    "is_default": false
+  },
+  {
+    "id": "status-013",
+    "project_id": "proj-002",
+    "name": "Review",
+    "color": "#f59e0b",
+    "category": "in_progress",
+    "sort_order": 3,
+    "is_default": false
+  },
+  {
+    "id": "status-014",
+    "project_id": "proj-002",
+    "name": "Completed",
+    "color": "#10b981",
+    "category": "done",
+    "sort_order": 4,
+    "is_default": false
+  },
+  {
+    "id": "status-021",
+    "project_id": "proj-003",
+    "name": "To Do",
+    "color": "#6b7280",
+    "category": "todo",
+    "sort_order": 1,
+    "is_default": true
+  },
+  {
+    "id": "status-022",
+    "project_id": "proj-003",
+    "name": "In Development",
+    "color": "#10b981",
+    "category": "in_progress",
+    "sort_order": 2,
+    "is_default": false
+  },
+  {
+    "id": "status-023",
+    "project_id": "proj-003",
+    "name": "Testing",
+    "color": "#f59e0b",
+    "category": "in_progress",
+    "sort_order": 3,
+    "is_default": false
+  },
+  {
+    "id": "status-024",
+    "project_id": "proj-003",
+    "name": "Done",
+    "color": "#22c55e",
+    "category": "done",
+    "sort_order": 4,
+    "is_default": false
+  },
+  {
+    "id": "status-031",
+    "project_id": "proj-004",
+    "name": "To Do",
+    "color": "#6b7280",
+    "category": "todo",
+    "sort_order": 1,
+    "is_default": true
+  },
+  {
+    "id": "status-032",
+    "project_id": "proj-004",
+    "name": "In Progress",
+    "color": "#f59e0b",
+    "category": "in_progress",
+    "sort_order": 2,
+    "is_default": false
+  },
+  {
+    "id": "status-033",
+    "project_id": "proj-004",
+    "name": "Done",
+    "color": "#22c55e",
+    "category": "done",
+    "sort_order": 3,
+    "is_default": false
+  }
+]

@@ -1,0 +1,34 @@
+[
+  {
+    "id": "priority-001",
+    "workspace_id": "ws-001",
+    "name": "Urgent",
+    "color": "#dc2626",
+    "icon": "alert-circle",
+    "sort_order": 4
+  },
+  {
+    "id": "priority-002",
+    "workspace_id": "ws-001",
+    "name": "High",
+    "color": "#f97316",
+    "icon": "arrow-up",
+    "sort_order": 3
+  },
+  {
+    "id": "priority-003",
+    "workspace_id": "ws-001",
+    "name": "Medium",
+    "color": "#eab308",
+    "icon": "minus",
+    "sort_order": 2
+  },
+  {
+    "id": "priority-004",
+    "workspace_id": "ws-001",
+    "name": "Low",
+    "color": "#22c55e",
+    "icon": "arrow-down",
+    "sort_order": 1
+  }
+]

@@ -1,0 +1,121 @@
+[
+  {
+    "id": "label-001",
+    "project_id": "proj-001",
+    "name": "Material",
+    "color": "#ef4444",
+    "description": "Related to construction materials"
+  },
+  {
+    "id": "label-002",
+    "project_id": "proj-001",
+    "name": "Budget",
+    "color": "#f59e0b",
+    "description": "Budget and cost related"
+  },
+  {
+    "id": "label-003",
+    "project_id": "proj-001",
+    "name": "Safety",
+    "color": "#eab308",
+    "description": "Safety requirements and compliance"
+  },
+  {
+    "id": "label-004",
+    "project_id": "proj-001",
+    "name": "Location",
+    "color": "#84cc16",
+    "description": "Site and location specific"
+  },
+  {
+    "id": "label-005",
+    "project_id": "proj-001",
+    "name": "Environment",
+    "color": "#22c55e",
+    "description": "Environmental considerations"
+  },
+  {
+    "id": "label-006",
+    "project_id": "proj-001",
+    "name": "Communication",
+    "color": "#06b6d4",
+    "description": "Stakeholder communication"
+  },
+  {
+    "id": "label-007",
+    "project_id": "proj-001",
+    "name": "Financial",
+    "color": "#3b82f6",
+    "description": "Financial tracking"
+  },
+  {
+    "id": "label-008",
+    "project_id": "proj-001",
+    "name": "Document",
+    "color": "#8b5cf6",
+    "description": "Documentation required"
+  },
+  {
+    "id": "label-009",
+    "project_id": "proj-001",
+    "name": "Emergency",
+    "color": "#ec4899",
+    "description": "Emergency or urgent items"
+  },
+  {
+    "id": "label-011",
+    "project_id": "proj-002",
+    "name": "Design",
+    "color": "#8b5cf6",
+    "description": "Design related tasks"
+  },
+  {
+    "id": "label-012",
+    "project_id": "proj-002",
+    "name": "Frontend",
+    "color": "#3b82f6",
+    "description": "Frontend development"
+  },
+  {
+    "id": "label-013",
+    "project_id": "proj-002",
+    "name": "Backend",
+    "color": "#10b981",
+    "description": "Backend development"
+  },
+  {
+    "id": "label-014",
+    "project_id": "proj-002",
+    "name": "Content",
+    "color": "#f59e0b",
+    "description": "Content creation"
+  },
+  {
+    "id": "label-021",
+    "project_id": "proj-003",
+    "name": "iOS",
+    "color": "#6b7280",
+    "description": "iOS specific"
+  },
+  {
+    "id": "label-022",
+    "project_id": "proj-003",
+    "name": "Android",
+    "color": "#22c55e",
+    "description": "Android specific"
+  },
+  {
+    "id": "label-023",
+    "project_id": "proj-003",
+    "name": "API",
+    "color": "#3b82f6",
+    "description": "API integration"
+  },
+  {
+    "id": "label-024",
+    "project_id": "proj-003",
+    "name": "UI/UX",
+    "color": "#ec4899",
+    "description": "User interface and experience"
+  }
+]

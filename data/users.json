@@ -1,0 +1,42 @@
+[
+  {
+    "id": "user-001",
+    "workspace_id": "ws-001",
+    "email": "sarah.chen@acme.com",
+    "name": "Sarah Chen",
+    "avatar_url": null,
+    "job_title": "Project Manager",
+    "role": "owner",
+    "created_at": "2024-01-15T09:00:00Z"
+  },
+  {
+    "id": "user-002",
+    "workspace_id": "ws-001",
+    "email": "marcus.johnson@acme.com",
+    "name": "Marcus Johnson",
+    "avatar_url": null,
+    "job_title": "Site Supervisor",
+    "role": "admin",
+    "created_at": "2024-01-16T10:30:00Z"
+  },
+  {
+    "id": "user-003",
+    "workspace_id": "ws-001",
+    "email": "elena.rodriguez@acme.com",
+    "name": "Elena Rodriguez",
+    "avatar_url": null,
+    "job_title": "Structural Engineer",
+    "role": "member",
+    "created_at": "2024-01-17T14:00:00Z"
+  },
+  {
+    "id": "user-004",
+    "workspace_id": "ws-001",
+    "email": "david.kim@acme.com",
+    "name": "David Kim",
+    "avatar_url": null,
+    "job_title": "Electrician",
+    "role": "member",
+    "created_at": "2024-01-18T11:00:00Z"
+  }
+]

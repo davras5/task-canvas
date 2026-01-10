@@ -1,0 +1,9 @@
+{
+  "id": "ws-001",
+  "name": "Acme Corporation",
+  "slug": "acme-corp",
+  "description": "Main workspace for Acme Corporation projects",
+  "logo_url": null,
+  "created_at": "2024-01-15T09:00:00Z",
+  "updated_at": "2024-01-15T09:00:00Z"
+}
