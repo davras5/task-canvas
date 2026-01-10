@@ -3357,7 +3357,7 @@ function renderRoadmapView(tasks, project) {
         <div class="gantt-timeline">
           <div class="gantt-timeline-header">
             ${months.map(month => `
-              <div class="gantt-month">
+              <div class="gantt-month" style="flex-grow: ${month.weeks.length}">
                 <div class="gantt-month-name">${month.name}</div>
                 <div class="gantt-weeks">
                   ${month.weeks.map(week => `
@@ -3373,8 +3373,8 @@ function renderRoadmapView(tasks, project) {
               const barStyle = getGanttBarStyle(task, timelineStart, totalDays, status?.color || FALLBACK_COLOR);
               return `
                 <div class="gantt-row">
-                  ${months.map(month => `
-                    ${month.weeks.map(() => `<div class="gantt-cell"></div>`).join('')}
+                  ${months.map((month, monthIndex) => `
+                    ${month.weeks.map((_, weekIndex) => `<div class="gantt-cell${weekIndex === 0 && monthIndex > 0 ? ' month-start' : ''}"></div>`).join('')}
                   `).join('')}
                   ${barStyle ? `
                     <div class="gantt-bar" style="${barStyle}">${escapeHtml(task.title)}</div>
