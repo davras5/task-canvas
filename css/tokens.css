@@ -91,6 +91,7 @@
   --color-text-link-hover: var(--color-primary-700);
 
   /* Colors - Semantic Backgrounds (more visible differentiation) */
+  --color-bg-app: var(--color-primary-50);        /* Soft blue app background */
   --color-bg-primary: var(--color-white);
   --color-bg-secondary: var(--color-gray-100);    /* Upgraded from gray-50 for better contrast */
   --color-bg-tertiary: var(--color-gray-200);     /* Upgraded from gray-100 */
