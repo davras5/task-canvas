@@ -688,10 +688,14 @@ img {
 }
 
 .project-identifier {
+  display: inline-block;
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  background: var(--color-gray-100);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.02em;
 }
 
 .project-favorite {
@@ -766,11 +770,11 @@ img {
 .project-list-item {
   display: flex;
   align-items: center;
-  gap: var(--spacing-4);
+  gap: var(--spacing-6);
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-4) var(--spacing-5);
+  padding: var(--spacing-4) var(--spacing-6);
   transition: all var(--transition-normal);
   cursor: pointer;
 }
@@ -800,16 +804,19 @@ img {
 }
 
 .project-list-identifier {
+  display: inline-block;
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
+  background: var(--color-gray-100);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.02em;
 }
 
 .project-list-progress {
   width: 200px;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 .project-list-progress .progress-label {
@@ -820,10 +827,8 @@ img {
   height: 4px;
 }
 
-.project-list-stats {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-6);
+.project-list-item > .project-stat span {
+  min-width: 40px;
 }
 
 /* ==========================================================================
@@ -876,7 +881,7 @@ img {
 .task-filters {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: var(--spacing-3);
 }
 
 .toolbar-label {
@@ -2425,7 +2430,7 @@ img {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-tertiary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-1);
 }
@@ -2455,7 +2460,7 @@ img {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-tertiary);
   border-radius: var(--radius-lg);
   padding: var(--spacing-1);
 }

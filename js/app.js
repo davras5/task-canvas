@@ -668,15 +668,13 @@ function renderProjectsList(projects) {
                 <div class="progress-fill" style="width: ${progress.percentage}%; background: ${project.color}"></div>
               </div>
             </div>
-            <div class="project-list-stats">
-              <div class="project-stat">
-                ${icons.tasks}
-                <span>${progress.done}/${progress.total}</span>
-              </div>
-              <div class="project-stat">
-                ${icons.users}
-                <span>${members.length}</span>
-              </div>
+            <div class="project-stat">
+              ${icons.tasks}
+              <span>${progress.done}/${progress.total}</span>
+            </div>
+            <div class="project-stat">
+              ${icons.users}
+              <span>${members.length}</span>
             </div>
             <button class="project-favorite ${project.is_favorite ? 'is-favorite' : ''}" data-project-id="${project.id}">
               ${project.is_favorite ? icons.starFilled : icons.star}
@@ -941,7 +939,7 @@ function renderBoardToolbar(project) {
           </div>
         </div>
         <button class="filter-btn" data-action="toggle-swimlane">
-          ${icons.list} Swimlanes: ${swimlaneLabels[swimlane]}
+          ${icons.grid} Group by ${swimlaneLabels[swimlane]}
           ${icons.chevronDown}
         </button>
       </div>
@@ -1126,12 +1124,17 @@ function getSwimlanes(tasks, project, swimlane) {
   if (swimlane === 'none') return [];
 
   if (swimlane === 'priority') {
-    return [
-      { id: 'priority-high', name: 'High', color: '#ef4444', filter: t => t.priority_id === 'priority-high' },
-      { id: 'priority-medium', name: 'Medium', color: '#f59e0b', filter: t => t.priority_id === 'priority-medium' },
-      { id: 'priority-low', name: 'Low', color: '#10b981', filter: t => t.priority_id === 'priority-low' },
-      { id: 'priority-none', name: 'No Priority', color: '#6b7280', filter: t => !t.priority_id }
-    ];
+    const lanes = state.priorities
+      .slice()
+      .sort((a, b) => b.sort_order - a.sort_order)
+      .map(priority => ({
+        id: priority.id,
+        name: priority.name,
+        color: priority.color,
+        filter: t => t.priority_id === priority.id
+      }));
+    lanes.push({ id: 'priority-none', name: 'No Priority', color: '#6b7280', filter: t => !t.priority_id });
+    return lanes;
   }
 
   if (swimlane === 'assignee') {
@@ -4316,7 +4319,7 @@ function showSwimlaneDropdown(buttonElement, projectSlug) {
       state.boardSwimlane[project.id] = newSwimlane;
       closeDropdown();
       renderProjectDetail(projectSlug);
-      showToast(`Swimlanes: ${newSwimlane === 'none' ? 'Off' : newSwimlane}`, 'success');
+      showToast(`Group by ${newSwimlane === 'none' ? 'None' : newSwimlane}`, 'success');
     });
   });
 
