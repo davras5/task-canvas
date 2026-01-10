@@ -76,6 +76,10 @@ const state = {
   filesPagination: { page: 1, pageSize: 10 },
   membersPagination: { page: 1, pageSize: 10 },
 
+  // Roadmap state
+  roadmapScale: 'month', // 'week' | 'month' | 'quarter' | 'year'
+  roadmapOffset: 0, // Timeline navigation offset (in scale units)
+
   // Modal state
   activeModal: null,
   activeDropdown: null,
@@ -1719,6 +1723,9 @@ function attachProjectDetailEventListeners(slug) {
   // Insights view event listeners
   attachInsightsEventListeners(slug);
 
+  // Roadmap view event listeners
+  attachRoadmapEventListeners(slug);
+
   // Initialize drag and drop for tasks
   initDragAndDrop(slug);
 }
@@ -2114,6 +2121,169 @@ function attachInsightsEventListeners(slug) {
       exportInsightsData(project);
     }, { signal });
   }
+}
+
+function attachRoadmapEventListeners(slug) {
+  const signal = getViewSignal();
+
+  // Scale toggle buttons
+  document.querySelectorAll('.roadmap-zoom-btn[data-scale]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newScale = btn.dataset.scale;
+      if (state.roadmapScale !== newScale) {
+        state.roadmapScale = newScale;
+        state.roadmapOffset = 0; // Reset offset when changing scale
+        renderProjectDetail(slug);
+      }
+    }, { signal });
+  });
+
+  // Navigation - Previous
+  document.querySelectorAll('[data-action="roadmap-prev"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.roadmapOffset--;
+      renderProjectDetail(slug);
+    }, { signal });
+  });
+
+  // Navigation - Next
+  document.querySelectorAll('[data-action="roadmap-next"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.roadmapOffset++;
+      renderProjectDetail(slug);
+    }, { signal });
+  });
+
+  // Navigation - Today
+  document.querySelectorAll('[data-action="roadmap-today"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.roadmapOffset = 0;
+      renderProjectDetail(slug);
+    }, { signal });
+  });
+
+  // Gantt bar drag and resize
+  initGanttBarDragResize(slug, signal);
+}
+
+function initGanttBarDragResize(slug, signal) {
+  const ganttRows = document.querySelector('.gantt-rows');
+  if (!ganttRows) return;
+
+  const timelineStart = new Date(ganttRows.dataset.timelineStart);
+  const totalDays = parseInt(ganttRows.dataset.totalDays, 10);
+
+  let dragState = null;
+
+  // Helper: Convert pixel position to date
+  function pixelToDate(pixelX, containerWidth) {
+    const dayOffset = (pixelX / containerWidth) * totalDays;
+    const date = new Date(timelineStart);
+    date.setDate(date.getDate() + Math.round(dayOffset));
+    return date;
+  }
+
+  // Helper: Format date as YYYY-MM-DD
+  function formatDateISO(date) {
+    return date.toISOString().split('T')[0];
+  }
+
+  // Mouse down on bar or handle
+  document.querySelectorAll('.gantt-bar:not(.no-dates)').forEach(bar => {
+    bar.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const taskId = bar.dataset.taskId;
+      const task = getTaskById(taskId);
+      if (!task) return;
+
+      const row = bar.closest('.gantt-row');
+      const rowRect = row.getBoundingClientRect();
+      const barRect = bar.getBoundingClientRect();
+
+      // Determine drag type
+      let dragType = 'move';
+      if (e.target.classList.contains('gantt-bar-handle-left')) {
+        dragType = 'resize-left';
+      } else if (e.target.classList.contains('gantt-bar-handle-right')) {
+        dragType = 'resize-right';
+      }
+
+      dragState = {
+        taskId,
+        task,
+        bar,
+        row,
+        rowRect,
+        dragType,
+        startX: e.clientX,
+        initialLeft: parseFloat(bar.style.left) || 0,
+        initialWidth: parseFloat(bar.style.width) || 10,
+        containerWidth: rowRect.width
+      };
+
+      bar.classList.add('dragging');
+      document.body.style.cursor = dragType === 'move' ? 'grabbing' : 'ew-resize';
+    }, { signal });
+  });
+
+  // Mouse move - update bar position/size
+  document.addEventListener('mousemove', (e) => {
+    if (!dragState) return;
+
+    const deltaX = e.clientX - dragState.startX;
+    const deltaPercent = (deltaX / dragState.containerWidth) * 100;
+
+    if (dragState.dragType === 'move') {
+      // Move the entire bar
+      const newLeft = Math.max(0, Math.min(100 - dragState.initialWidth, dragState.initialLeft + deltaPercent));
+      dragState.bar.style.left = `${newLeft}%`;
+    } else if (dragState.dragType === 'resize-left') {
+      // Resize from left edge (changes start date)
+      const newLeft = Math.max(0, dragState.initialLeft + deltaPercent);
+      const newWidth = dragState.initialWidth - deltaPercent;
+      if (newWidth >= 2) { // Minimum width
+        dragState.bar.style.left = `${newLeft}%`;
+        dragState.bar.style.width = `${newWidth}%`;
+      }
+    } else if (dragState.dragType === 'resize-right') {
+      // Resize from right edge (changes end date)
+      const newWidth = Math.max(2, dragState.initialWidth + deltaPercent);
+      const maxWidth = 100 - dragState.initialLeft;
+      dragState.bar.style.width = `${Math.min(newWidth, maxWidth)}%`;
+    }
+  }, { signal });
+
+  // Mouse up - save changes
+  document.addEventListener('mouseup', (e) => {
+    if (!dragState) return;
+
+    const { taskId, bar, containerWidth, rowRect } = dragState;
+
+    // Calculate new dates from final bar position
+    const finalLeft = parseFloat(bar.style.left);
+    const finalWidth = parseFloat(bar.style.width);
+
+    const startPixel = (finalLeft / 100) * containerWidth;
+    const endPixel = ((finalLeft + finalWidth) / 100) * containerWidth;
+
+    const newStartDate = pixelToDate(startPixel, containerWidth);
+    const newEndDate = pixelToDate(endPixel, containerWidth);
+
+    // Update task
+    updateTaskField(taskId, 'start_date', formatDateISO(newStartDate), slug);
+    updateTaskField(taskId, 'due_date', formatDateISO(newEndDate), slug);
+
+    // Clean up
+    bar.classList.remove('dragging');
+    document.body.style.cursor = '';
+    dragState = null;
+
+    // Show feedback
+    showToast('Task dates updated', 'success');
+
+    // Re-render to ensure consistency
+    renderProjectDetail(slug);
+  }, { signal });
 }
 
 function exportInsightsData(project) {
@@ -3301,35 +3471,27 @@ function formatRelativeTime(dateString) {
 // ==========================================================================
 
 function renderRoadmapView(tasks, project) {
-  // Generate months for the timeline (show 4 months)
+  const scale = state.roadmapScale;
+  const offset = state.roadmapOffset;
   const today = new Date();
-  const months = [];
-  for (let i = -1; i < 3; i++) {
-    const date = new Date(today.getFullYear(), today.getMonth() + i, 1);
-    months.push({
-      name: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      start: new Date(date.getFullYear(), date.getMonth(), 1),
-      end: new Date(date.getFullYear(), date.getMonth() + 1, 0),
-      weeks: getWeeksInMonth(date)
-    });
-  }
 
-  const timelineStart = months[0].start;
-  const timelineEnd = months[months.length - 1].end;
-  const totalDays = Math.ceil((timelineEnd - timelineStart) / (1000 * 60 * 60 * 24));
+  // Generate timeline data based on scale
+  const timeline = generateTimeline(scale, offset, today);
+  const { units, timelineStart, timelineEnd, totalDays } = timeline;
 
   return `
     <div class="roadmap-view">
       <div class="roadmap-toolbar">
         <div class="roadmap-zoom">
-          <button class="roadmap-zoom-btn">Week</button>
-          <button class="roadmap-zoom-btn active">Month</button>
-          <button class="roadmap-zoom-btn">Quarter</button>
+          <button class="roadmap-zoom-btn${scale === 'week' ? ' active' : ''}" data-scale="week">Week</button>
+          <button class="roadmap-zoom-btn${scale === 'month' ? ' active' : ''}" data-scale="month">Month</button>
+          <button class="roadmap-zoom-btn${scale === 'quarter' ? ' active' : ''}" data-scale="quarter">Quarter</button>
+          <button class="roadmap-zoom-btn${scale === 'year' ? ' active' : ''}" data-scale="year">Year</button>
         </div>
         <div class="roadmap-nav">
-          <button class="roadmap-nav-btn">${icons.chevronLeft}</button>
-          <button class="roadmap-today-btn">Today</button>
-          <button class="roadmap-nav-btn">${icons.chevronRight}</button>
+          <button class="roadmap-nav-btn" data-action="roadmap-prev">${icons.chevronLeft}</button>
+          <button class="roadmap-today-btn" data-action="roadmap-today">Today</button>
+          <button class="roadmap-nav-btn" data-action="roadmap-next">${icons.chevronRight}</button>
         </div>
       </div>
       <div class="roadmap-content">
@@ -3354,32 +3516,36 @@ function renderRoadmapView(tasks, project) {
             }).join('')}
           </div>
         </div>
-        <div class="gantt-timeline">
-          <div class="gantt-timeline-header">
-            ${months.map(month => `
-              <div class="gantt-month" style="flex-grow: ${month.weeks.length}">
-                <div class="gantt-month-name">${month.name}</div>
-                <div class="gantt-weeks">
-                  ${month.weeks.map(week => `
-                    <div class="gantt-week">${week}</div>
-                  `).join('')}
-                </div>
-              </div>
+        <div class="gantt-timeline" style="--gantt-columns: ${units.reduce((sum, u) => sum + u.subdivisions.length, 0)}">
+          <div class="gantt-header-units">
+            ${units.map((unit, unitIndex) => `
+              <div class="gantt-unit-name${unitIndex > 0 ? ' unit-start' : ''}" style="grid-column: span ${unit.subdivisions.length}">${unit.name}</div>
             `).join('')}
           </div>
-          <div class="gantt-rows">
+          <div class="gantt-header-subs">
+            ${units.map((unit, unitIndex) => `
+              ${unit.subdivisions.map((sub, subIndex) => `
+                <div class="gantt-subdivision${subIndex === 0 && unitIndex > 0 ? ' unit-start' : ''}">${sub.label}</div>
+              `).join('')}
+            `).join('')}
+          </div>
+          <div class="gantt-rows" data-timeline-start="${timelineStart.toISOString()}" data-total-days="${totalDays}">
             ${tasks.map(task => {
               const status = getStatusById(task.status_id);
               const barStyle = getGanttBarStyle(task, timelineStart, totalDays, status?.color || FALLBACK_COLOR);
               return `
                 <div class="gantt-row">
-                  ${months.map((month, monthIndex) => `
-                    ${month.weeks.map((_, weekIndex) => `<div class="gantt-cell${weekIndex === 0 && monthIndex > 0 ? ' month-start' : ''}"></div>`).join('')}
+                  ${units.map((unit, unitIndex) => `
+                    ${unit.subdivisions.map((_, subIndex) => `<div class="gantt-cell${subIndex === 0 && unitIndex > 0 ? ' unit-start' : ''}"></div>`).join('')}
                   `).join('')}
                   ${barStyle ? `
-                    <div class="gantt-bar" style="${barStyle}">${escapeHtml(task.title)}</div>
+                    <div class="gantt-bar" data-task-id="${task.id}" style="${barStyle}">
+                      <div class="gantt-bar-handle gantt-bar-handle-left"></div>
+                      <span class="gantt-bar-label">${escapeHtml(task.title)}</span>
+                      <div class="gantt-bar-handle gantt-bar-handle-right"></div>
+                    </div>
                   ` : `
-                    <div class="gantt-bar no-dates" style="left: 10px; width: 100px;">No dates</div>
+                    <div class="gantt-bar no-dates" data-task-id="${task.id}" style="left: 10px; width: 100px;">No dates</div>
                   `}
                 </div>
               `;
@@ -3391,6 +3557,161 @@ function renderRoadmapView(tasks, project) {
       </div>
     </div>
   `;
+}
+
+// Generate timeline data based on scale
+function generateTimeline(scale, offset, today) {
+  switch (scale) {
+    case 'week':
+      return generateWeekTimeline(offset, today);
+    case 'month':
+      return generateMonthTimeline(offset, today);
+    case 'quarter':
+      return generateQuarterTimeline(offset, today);
+    case 'year':
+      return generateYearTimeline(offset, today);
+    default:
+      return generateMonthTimeline(offset, today);
+  }
+}
+
+// Week view: Shows ~4 weeks with days as subdivisions
+function generateWeekTimeline(offset, today) {
+  const units = [];
+  const startOfWeek = getStartOfWeek(today);
+  startOfWeek.setDate(startOfWeek.getDate() + (offset * 7)); // Each offset unit = 1 week
+
+  // Show 4 weeks
+  for (let w = -1; w < 3; w++) {
+    const weekStart = new Date(startOfWeek);
+    weekStart.setDate(weekStart.getDate() + (w * 7));
+
+    const subdivisions = [];
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(weekStart);
+      day.setDate(day.getDate() + d);
+      subdivisions.push({
+        label: day.getDate().toString(),
+        date: new Date(day)
+      });
+    }
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+
+    units.push({
+      name: `${weekStart.toLocaleDateString('en-US', { month: 'short' })} ${weekStart.getDate()}-${weekEnd.getDate()}`,
+      start: new Date(weekStart),
+      end: weekEnd,
+      subdivisions
+    });
+  }
+
+  const timelineStart = units[0].start;
+  const timelineEnd = units[units.length - 1].end;
+  const totalDays = Math.ceil((timelineEnd - timelineStart) / (1000 * 60 * 60 * 24)) + 1;
+
+  return { units, timelineStart, timelineEnd, totalDays };
+}
+
+// Month view: Shows ~4 months with weeks as subdivisions
+function generateMonthTimeline(offset, today) {
+  const units = [];
+
+  for (let i = -1 + offset; i < 3 + offset; i++) {
+    const date = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    const weeks = getWeeksInMonth(date);
+
+    units.push({
+      name: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      start: new Date(date.getFullYear(), date.getMonth(), 1),
+      end: new Date(date.getFullYear(), date.getMonth() + 1, 0),
+      subdivisions: weeks.map(week => ({ label: week.toString(), date: null }))
+    });
+  }
+
+  const timelineStart = units[0].start;
+  const timelineEnd = units[units.length - 1].end;
+  const totalDays = Math.ceil((timelineEnd - timelineStart) / (1000 * 60 * 60 * 24));
+
+  return { units, timelineStart, timelineEnd, totalDays };
+}
+
+// Quarter view: Shows ~4 quarters with months as subdivisions
+function generateQuarterTimeline(offset, today) {
+  const units = [];
+  const currentQuarter = Math.floor(today.getMonth() / 3);
+  const currentYear = today.getFullYear();
+
+  for (let i = -1 + offset; i < 3 + offset; i++) {
+    const quarterIndex = currentQuarter + i;
+    const year = currentYear + Math.floor(quarterIndex / 4);
+    const quarter = ((quarterIndex % 4) + 4) % 4; // Handle negative modulo
+
+    const quarterStart = new Date(year, quarter * 3, 1);
+    const quarterEnd = new Date(year, quarter * 3 + 3, 0);
+
+    const subdivisions = [];
+    for (let m = 0; m < 3; m++) {
+      const monthDate = new Date(year, quarter * 3 + m, 1);
+      subdivisions.push({
+        label: monthDate.toLocaleDateString('en-US', { month: 'short' }),
+        date: monthDate
+      });
+    }
+
+    units.push({
+      name: `Q${quarter + 1} ${year}`,
+      start: quarterStart,
+      end: quarterEnd,
+      subdivisions
+    });
+  }
+
+  const timelineStart = units[0].start;
+  const timelineEnd = units[units.length - 1].end;
+  const totalDays = Math.ceil((timelineEnd - timelineStart) / (1000 * 60 * 60 * 24));
+
+  return { units, timelineStart, timelineEnd, totalDays };
+}
+
+// Year view: Shows ~3 years with quarters as subdivisions
+function generateYearTimeline(offset, today) {
+  const units = [];
+  const currentYear = today.getFullYear();
+
+  for (let i = -1 + offset; i < 2 + offset; i++) {
+    const year = currentYear + i;
+
+    const subdivisions = [];
+    for (let q = 0; q < 4; q++) {
+      subdivisions.push({
+        label: `Q${q + 1}`,
+        date: new Date(year, q * 3, 1)
+      });
+    }
+
+    units.push({
+      name: year.toString(),
+      start: new Date(year, 0, 1),
+      end: new Date(year, 11, 31),
+      subdivisions
+    });
+  }
+
+  const timelineStart = units[0].start;
+  const timelineEnd = units[units.length - 1].end;
+  const totalDays = Math.ceil((timelineEnd - timelineStart) / (1000 * 60 * 60 * 24));
+
+  return { units, timelineStart, timelineEnd, totalDays };
+}
+
+// Helper: Get start of week (Monday)
+function getStartOfWeek(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
+  return new Date(d.setDate(diff));
 }
 
 function getWeeksInMonth(date) {

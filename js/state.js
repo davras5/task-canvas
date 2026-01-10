@@ -29,6 +29,10 @@ export const state = {
   selectedFiles: new Set(),
   selectedTasks: new Set(),
 
+  // Roadmap state
+  roadmapScale: 'month', // 'week' | 'month' | 'quarter' | 'year'
+  roadmapOffset: 0, // Timeline navigation offset (in scale units)
+
   // Modal state
   activeModal: null,
   activeDropdown: null,
