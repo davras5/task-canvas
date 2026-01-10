@@ -2672,12 +2672,11 @@ img {
 .gantt-month {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--color-border-default);
   /* flex-grow is set inline based on number of weeks */
 }
 
-.gantt-month:last-child {
-  border-right: none;
+.gantt-month:not(:first-child) {
+  border-left: 1px solid var(--color-border-default);
 }
 
 .gantt-month-name {
