@@ -28,6 +28,7 @@ const state = {
   showArchivedTasks: {}, // { projectId: boolean }
   assignedToMe: {}, // { projectId: boolean } - filter to show only tasks assigned to current user
   projectFields: {}, // { projectId: { status: bool, priority: bool, ... } }
+  taskSearch: {}, // { projectId: string } - search query for filtering tasks
   collapsedGroups: new Set(),
   selectedFiles: new Set(),
   selectedTasks: new Set(),
@@ -95,7 +96,41 @@ function getProjectBySlug(slug) {
 function getTasksForProject(projectId, includeArchived = null) {
   // If includeArchived is not specified, use the project's showArchivedTasks setting
   const showArchived = includeArchived !== null ? includeArchived : (state.showArchivedTasks[projectId] || false);
-  return state.tasks.filter(t => t.project_id === projectId && (showArchived || !t.is_archived));
+  const searchQuery = (state.taskSearch[projectId] || '').toLowerCase().trim();
+  const filterAssignedToMe = state.assignedToMe[projectId] || false;
+  const currentUser = getCurrentUser();
+
+  return state.tasks.filter(t => {
+    // Project filter
+    if (t.project_id !== projectId) return false;
+
+    // Archived filter
+    if (!showArchived && t.is_archived) return false;
+
+    // Assigned to me filter
+    if (filterAssignedToMe && currentUser) {
+      if (t.assignee_id !== currentUser.id) return false;
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const titleMatch = t.title.toLowerCase().includes(searchQuery);
+      const descMatch = t.description?.toLowerCase().includes(searchQuery);
+      const keyMatch = t.key?.toLowerCase().includes(searchQuery);
+
+      // Also search in assignee name
+      const assignee = t.assignee_id ? state.users.find(u => u.id === t.assignee_id) : null;
+      const assigneeMatch = assignee?.name?.toLowerCase().includes(searchQuery);
+
+      // Search in labels
+      const taskLabels = t.label_ids?.map(id => state.labels.find(l => l.id === id)?.name?.toLowerCase()) || [];
+      const labelMatch = taskLabels.some(name => name?.includes(searchQuery));
+
+      if (!titleMatch && !descMatch && !keyMatch && !assigneeMatch && !labelMatch) return false;
+    }
+
+    return true;
+  });
 }
 
 function getDefaultFields() {
@@ -126,8 +161,25 @@ function getUserById(id) {
   return state.users.find(u => u.id === id);
 }
 
+function getCurrentUser() {
+  // In a real app, this would come from auth state
+  // For demo, we use the first user (Sarah Chen) as the current user
+  return state.users[0];
+}
+
 function getPriorityById(id) {
   return state.priorities.find(p => p.id === id);
+}
+
+function getPriorityIcon(priorityName) {
+  if (!priorityName) return '';
+  const name = priorityName.toLowerCase();
+  if (name === 'highest' || name === 'urgent' || name === 'critical') return icons.priorityHighest;
+  if (name === 'high') return icons.priorityHigh;
+  if (name === 'medium' || name === 'normal') return icons.priorityMedium;
+  if (name === 'low') return icons.priorityLow;
+  if (name === 'lowest' || name === 'trivial') return icons.priorityLowest;
+  return icons.priorityMedium; // Default fallback
 }
 
 function getLabelById(id) {
@@ -152,6 +204,65 @@ function formatFileSize(bytes) {
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function getFileTypeFromName(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const typeMap = {
+    pdf: 'pdf',
+    jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', webp: 'image', svg: 'image',
+    doc: 'document', docx: 'document', txt: 'document', rtf: 'document',
+    xls: 'spreadsheet', xlsx: 'spreadsheet', csv: 'spreadsheet',
+    zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', gz: 'archive',
+    dwg: 'cad', dxf: 'cad', step: 'cad', stp: 'cad'
+  };
+  return typeMap[ext] || 'document';
+}
+
+function generateId() {
+  return 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+}
+
+function handleFileUpload(fileList, projectId, taskId) {
+  const currentUser = getCurrentUser();
+  const newFiles = [];
+
+  for (const file of fileList) {
+    const newFile = {
+      id: generateId(),
+      project_id: projectId,
+      task_id: taskId,
+      name: file.name,
+      file_type: getFileTypeFromName(file.name),
+      size_bytes: file.size,
+      uploaded_by: currentUser?.id || null,
+      uploaded_at: new Date().toISOString()
+    };
+    newFiles.push(newFile);
+    state.files.push(newFile);
+  }
+
+  const fileCount = newFiles.length;
+  const message = fileCount === 1
+    ? `"${newFiles[0].name}" uploaded successfully`
+    : `${fileCount} files uploaded successfully`;
+
+  showToast(message, 'success');
+
+  // Re-render the current view
+  if (state.openTaskId) {
+    const task = getTaskById(state.openTaskId);
+    if (task) {
+      renderTaskPanel(task, state.openTaskProjectSlug);
+      setupTaskPanelEventListeners(state.openTaskId, state.openTaskProjectSlug);
+    }
+  }
+
+  const currentPath = window.location.hash.slice(1);
+  const projectMatch = currentPath.match(/^\/projects\/([^/]+)/);
+  if (projectMatch) {
+    renderProjectDetail(projectMatch[1]);
+  }
 }
 
 function calculateProjectProgress(projectId) {
@@ -345,6 +456,9 @@ const icons = {
   x: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
   </svg>`,
+  close: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+  </svg>`,
   mail: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
   </svg>`,
@@ -365,6 +479,31 @@ const icons = {
   </svg>`,
   user: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>`,
+  checkCircle: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>`,
+  clock: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+  </svg>`,
+  warning: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>`,
+  // Priority arrows (Jira-style)
+  priorityHighest: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M3 10l5-6 5 6H3z"/><path d="M3 14l5-6 5 6H3z"/>
+  </svg>`,
+  priorityHigh: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M3 12l5-6 5 6H3z"/>
+  </svg>`,
+  priorityMedium: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <rect x="2" y="7" width="12" height="2" rx="1"/>
+  </svg>`,
+  priorityLow: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M3 4l5 6 5-6H3z"/>
+  </svg>`,
+  priorityLowest: `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M3 2l5 6 5-6H3z"/><path d="M3 6l5 6 5-6H3z"/>
   </svg>`,
 };
 
@@ -678,12 +817,30 @@ function renderTaskListToolbar(project, groupBy) {
   const sortLabel = sortLabels[sort.field] || 'Manual';
   const directionIcon = sort.field !== 'manual' ? (sort.direction === 'asc' ? icons.arrowUp : icons.arrowDown) : '';
 
+  const searchQuery = state.taskSearch[project.id] || '';
+  const searchExpanded = searchQuery.length > 0;
+
   return `
     <div class="task-toolbar">
       <div class="task-filters">
-        <button class="filter-btn">
-          ${icons.search} Search
-        </button>
+        <div class="toolbar-search ${searchExpanded ? 'expanded' : ''}" data-project-id="${project.id}">
+          <button class="filter-btn toolbar-search-toggle" data-action="toggle-search" aria-label="Search tasks" aria-expanded="${searchExpanded}">
+            ${icons.search}
+            <span class="toolbar-search-label">Search</span>
+          </button>
+          <div class="toolbar-search-input-wrapper">
+            <span class="toolbar-search-icon">${icons.search}</span>
+            <input type="text"
+                   class="toolbar-search-input"
+                   placeholder="Search tasks..."
+                   value="${escapeHtml(searchQuery)}"
+                   data-action="search-tasks"
+                   aria-label="Search tasks">
+            <button class="toolbar-search-clear" data-action="clear-search" aria-label="Clear search">
+              ${icons.x}
+            </button>
+          </div>
+        </div>
         <button class="filter-btn" data-action="toggle-sort">
           ${icons.sort} ${sortLabel}
           ${directionIcon}
@@ -726,12 +883,30 @@ function renderBoardToolbar(project) {
     assignee: 'Assignee'
   };
 
+  const searchQuery = state.taskSearch[project.id] || '';
+  const searchExpanded = searchQuery.length > 0;
+
   return `
     <div class="task-toolbar">
       <div class="task-filters">
-        <button class="filter-btn">
-          ${icons.search} Search
-        </button>
+        <div class="toolbar-search ${searchExpanded ? 'expanded' : ''}" data-project-id="${project.id}">
+          <button class="filter-btn toolbar-search-toggle" data-action="toggle-search" aria-label="Search tasks" aria-expanded="${searchExpanded}">
+            ${icons.search}
+            <span class="toolbar-search-label">Search</span>
+          </button>
+          <div class="toolbar-search-input-wrapper">
+            <span class="toolbar-search-icon">${icons.search}</span>
+            <input type="text"
+                   class="toolbar-search-input"
+                   placeholder="Search tasks..."
+                   value="${escapeHtml(searchQuery)}"
+                   data-action="search-tasks"
+                   aria-label="Search tasks">
+            <button class="toolbar-search-clear" data-action="clear-search" aria-label="Clear search">
+              ${icons.x}
+            </button>
+          </div>
+        </div>
         <button class="filter-btn" data-action="toggle-swimlane">
           ${icons.list} Swimlanes: ${swimlaneLabels[swimlane]}
           ${icons.chevronDown}
@@ -1078,6 +1253,88 @@ function attachProjectDetailEventListeners(slug) {
     });
   });
 
+  // Search toggle
+  document.querySelectorAll('[data-action="toggle-search"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const searchContainer = btn.closest('.toolbar-search');
+      if (searchContainer) {
+        searchContainer.classList.add('expanded');
+        const input = searchContainer.querySelector('.toolbar-search-input');
+        if (input) {
+          input.focus();
+        }
+      }
+    });
+  });
+
+  // Search input
+  document.querySelectorAll('[data-action="search-tasks"]').forEach(input => {
+    let debounceTimer;
+    input.addEventListener('input', (e) => {
+      const project = getProjectBySlug(slug);
+      if (project) {
+        clearTimeout(debounceTimer);
+        const cursorPosition = e.target.selectionStart;
+        debounceTimer = setTimeout(() => {
+          state.taskSearch[project.id] = e.target.value;
+          renderProjectDetail(slug);
+          // Restore focus to search input after re-render
+          const newInput = document.querySelector('.toolbar-search-input');
+          if (newInput) {
+            newInput.focus();
+            // Restore cursor position
+            newInput.setSelectionRange(cursorPosition, cursorPosition);
+          }
+        }, 200);
+      }
+    });
+
+    // Handle escape key to clear and close search
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const project = getProjectBySlug(slug);
+        if (project) {
+          state.taskSearch[project.id] = '';
+          const searchContainer = input.closest('.toolbar-search');
+          if (searchContainer) {
+            searchContainer.classList.remove('expanded');
+          }
+          renderProjectDetail(slug);
+        }
+      }
+    });
+
+    // Close search on blur if empty - only if not actively typing
+    input.addEventListener('blur', (e) => {
+      const searchContainer = input.closest('.toolbar-search');
+      // Use setTimeout to allow click on clear button to register and re-focus after render
+      setTimeout(() => {
+        const activeElement = document.activeElement;
+        const isSearchInputFocused = activeElement && activeElement.classList.contains('toolbar-search-input');
+        if (searchContainer && !input.value && !searchContainer.contains(document.activeElement) && !isSearchInputFocused) {
+          searchContainer.classList.remove('expanded');
+        }
+      }, 250);
+    });
+  });
+
+  // Clear search
+  document.querySelectorAll('[data-action="clear-search"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const project = getProjectBySlug(slug);
+      if (project) {
+        state.taskSearch[project.id] = '';
+        const searchContainer = btn.closest('.toolbar-search');
+        if (searchContainer) {
+          searchContainer.classList.remove('expanded');
+        }
+        renderProjectDetail(slug);
+      }
+    });
+  });
+
   // Fields dropdown
   document.querySelectorAll('[data-action="toggle-fields"]').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -1372,6 +1629,59 @@ function attachFilesEventListeners(slug) {
       }
     });
   });
+
+  // File upload - drop zone click
+  const dropZone = document.getElementById('files-drop-zone');
+  const filesInput = document.getElementById('files-input');
+
+  if (dropZone && filesInput) {
+    dropZone.addEventListener('click', () => {
+      filesInput.click();
+    });
+
+    filesInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileUpload(e.target.files, project.id, null);
+        e.target.value = ''; // Reset input
+      }
+    });
+
+    // Drag and drop handlers
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleFileUpload(e.dataTransfer.files, project.id, null);
+      }
+    });
+  }
+
+  // File upload - empty state button
+  const uploadBtnEmpty = document.querySelector('[data-action="upload-files-empty"]');
+  const filesInputEmpty = document.getElementById('files-input-empty');
+
+  if (uploadBtnEmpty && filesInputEmpty) {
+    uploadBtnEmpty.addEventListener('click', () => {
+      filesInputEmpty.click();
+    });
+
+    filesInputEmpty.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileUpload(e.target.files, project.id, null);
+        e.target.value = '';
+      }
+    });
+  }
 }
 
 function attachSettingsEventListeners(slug) {
@@ -1600,12 +1910,16 @@ function exportInsightsData(project) {
     return new Date(t.due_date) < today;
   });
 
-  // Status breakdown
+  // Status breakdown - include color from workflow settings
   const statusCounts = {};
   tasks.forEach(t => {
     const status = getStatusById(t.status_id);
     const statusName = status?.name || 'Unknown';
-    statusCounts[statusName] = (statusCounts[statusName] || 0) + 1;
+    const statusColor = status?.color || '#6b7280';
+    if (!statusCounts[statusName]) {
+      statusCounts[statusName] = { count: 0, color: statusColor };
+    }
+    statusCounts[statusName].count++;
   });
 
   // Priority breakdown
@@ -1629,7 +1943,7 @@ function exportInsightsData(project) {
     ['Overdue Tasks', overdueTasks.length],
     [''],
     ['Status Breakdown'],
-    ...Object.entries(statusCounts).map(([status, count]) => [status, count]),
+    ...Object.entries(statusCounts).map(([status, data]) => [status, data.count]),
     [''],
     ['Priority Breakdown'],
     ...Object.entries(priorityCounts).map(([priority, count]) => [priority, count]),
@@ -1758,12 +2072,10 @@ function renderTaskRow(task, project, group, groupBy) {
       ${fields.labels ? `
         <div class="task-labels clickable" title="Manage labels">
           ${taskLabels.length > 0 ? `
-            ${taskLabels.slice(0, 2).map(label => `
-              <span class="task-label" style="background: ${hexToRgba(label.color, 0.15)}; color: ${label.color}">
-                ${escapeHtml(label.name)}
-              </span>
-            `).join('')}
-            ${taskLabels.length > 2 ? `<span class="task-label more">+${taskLabels.length - 2}</span>` : ''}
+            <span class="task-label" style="background: ${hexToRgba(taskLabels[0].color, 0.15)}; color: ${taskLabels[0].color}">
+              ${escapeHtml(taskLabels[0].name)}
+            </span>
+            ${taskLabels.length > 1 ? `<span class="task-label more">+${taskLabels.length - 1}</span>` : ''}
           ` : `
             <span class="task-add-label">+ Label</span>
           `}
@@ -1771,7 +2083,7 @@ function renderTaskRow(task, project, group, groupBy) {
       ` : ''}
       ${fields.priority ? `
         <span class="task-priority clickable ${priority ? '' : 'empty'}" style="background: ${priorityBg}; color: ${priorityText}">
-          ${priority ? escapeHtml(priority.name) : '+ Priority'}
+          ${priority ? `${getPriorityIcon(priority.name)} ${escapeHtml(priority.name)}` : '+ Priority'}
         </span>
       ` : ''}
       ${fields.dueDate ? `
@@ -2025,7 +2337,8 @@ function renderFilesView(project) {
           ${files.map(file => renderFileRow(file, project)).join('')}
         </tbody>
       </table>
-      <div class="files-drop-zone" id="files-drop-zone">
+      <div class="files-drop-zone" id="files-drop-zone" data-action="upload-files">
+        <input type="file" id="files-input" class="files-input" multiple hidden>
         ${icons.upload} Drop files here or click to upload
       </div>
     </div>
@@ -2118,9 +2431,10 @@ function renderFilesEmptyState() {
         <p class="files-empty-description">
           Upload files to share documents, images, and other attachments with your team.
         </p>
-        <button class="btn-primary">
+        <button class="btn-primary" data-action="upload-files-empty">
           ${icons.upload} Upload Files
         </button>
+        <input type="file" id="files-input-empty" class="files-input" multiple hidden>
       </div>
     </div>
   `;
@@ -2155,12 +2469,16 @@ function renderInsightsView(tasks, project) {
     return dueDate < today;
   });
 
-  // Status breakdown
+  // Status breakdown - include color from workflow settings
   const statusCounts = {};
   tasks.forEach(t => {
     const status = getStatusById(t.status_id);
     const statusName = status?.name || 'Unknown';
-    statusCounts[statusName] = (statusCounts[statusName] || 0) + 1;
+    const statusColor = status?.color || '#6b7280';
+    if (!statusCounts[statusName]) {
+      statusCounts[statusName] = { count: 0, color: statusColor };
+    }
+    statusCounts[statusName].count++;
   });
 
   // Priority breakdown
@@ -2236,20 +2554,16 @@ function renderInsightsView(tasks, project) {
 }
 
 function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueTasks, statusCounts, priorityCounts, lastUpdatedTasks, project) {
-  const statusColors = {
-    'To Do': '#6b7280',
-    'Doing': '#3b82f6',
-    'Done': '#10b981'
-  };
-
-  // Calculate donut chart segments
+  // Calculate donut chart segments using colors from workflow settings
   const total = tasks.length || 1;
   let currentAngle = 0;
-  const segments = Object.entries(statusCounts).map(([name, count]) => {
+  const segments = Object.entries(statusCounts).map(([name, data]) => {
+    const count = data.count;
+    const color = data.color; // Use color from workflow settings
     const percentage = (count / total) * 100;
     const startAngle = currentAngle;
     currentAngle += (percentage / 100) * 360;
-    return { name, count, percentage, startAngle, endAngle: currentAngle, color: statusColors[name] || '#6b7280' };
+    return { name, count, percentage, startAngle, endAngle: currentAngle, color };
   });
 
   return `
@@ -4503,6 +4817,9 @@ function renderTaskPanel(task, projectSlug) {
   const taskLabels = (task.label_ids || []).map(id => getLabelById(id)).filter(Boolean);
   const taskKey = `${project.identifier}-${task.sequence_id}`;
 
+  // Get files attached to this task
+  const taskFiles = state.files.filter(f => f.task_id === task.id);
+
   const statusBg = status ? hexToRgba(status.color, 0.15) : '';
   const statusText = status?.color || '#6b7280';
   const priorityBg = priority ? hexToRgba(priority.color, 0.15) : '';
@@ -4517,7 +4834,7 @@ function renderTaskPanel(task, projectSlug) {
         <span class="task-panel-key">${escapeHtml(taskKey)}</span>
       </div>
       <div class="task-panel-actions">
-        <button class="task-panel-action-btn" title="Copy link">
+        <button class="task-panel-action-btn" data-action="copy-link" data-task-key="${escapeHtml(taskKey)}" title="Copy link">
           ${icons.link}
         </button>
         <button class="task-panel-action-btn" title="More options">
@@ -4557,7 +4874,7 @@ function renderTaskPanel(task, projectSlug) {
             <span class="task-panel-priority-badge ${priority ? '' : 'empty'}"
                   style="background: ${priorityBg}; color: ${priorityText}"
                   data-action="change-priority">
-              ${priority ? escapeHtml(priority.name) : 'Set priority'}
+              ${priority ? `${getPriorityIcon(priority.name)} ${escapeHtml(priority.name)}` : 'Set priority'}
             </span>
           </div>
         </div>
@@ -4622,21 +4939,108 @@ function renderTaskPanel(task, projectSlug) {
       <!-- Description Section -->
       <div class="task-panel-section">
         <div class="task-panel-section-header">
-          ${icons.file} Description
+          Description
         </div>
         <textarea class="task-panel-description-input"
                   data-field="description"
                   placeholder="Add a description...">${escapeHtml(task.description || '')}</textarea>
       </div>
+
+      <!-- Attachments Section -->
+      <div class="task-panel-section">
+        <div class="task-panel-section-header">
+          Attachments
+          <span class="task-panel-section-count">${taskFiles.length}</span>
+        </div>
+        <div class="task-panel-attachments">
+          ${taskFiles.length > 0 ? taskFiles.map(file => `
+            <div class="task-panel-attachment" data-file-id="${file.id}">
+              <div class="task-panel-attachment-icon">
+                ${getFileIcon(file.file_type)}
+              </div>
+              <div class="task-panel-attachment-info">
+                <span class="task-panel-attachment-name">${escapeHtml(file.name)}</span>
+                <span class="task-panel-attachment-meta">${formatFileSize(file.size_bytes)}</span>
+              </div>
+              <button class="task-panel-attachment-action" title="Download">
+                ${icons.download}
+              </button>
+            </div>
+          `).join('') : `
+            <div class="task-panel-empty-state">
+              <span>No attachments yet</span>
+            </div>
+          `}
+          <button class="task-panel-add-btn" data-action="add-attachment">
+            ${icons.plus} Add attachment
+          </button>
+          <input type="file" id="task-panel-file-input" class="files-input" multiple hidden>
+        </div>
+      </div>
+
+      <!-- Activity Section -->
+      <div class="task-panel-section">
+        <div class="task-panel-section-header">
+          Activity
+        </div>
+        <div class="task-panel-activity">
+          <div class="task-panel-activity-item">
+            <div class="task-panel-activity-icon">
+              ${icons.plus}
+            </div>
+            <div class="task-panel-activity-content">
+              <span class="task-panel-activity-text">
+                <strong>${escapeHtml(getCurrentUser()?.name || 'Someone')}</strong> created this task
+              </span>
+              <span class="task-panel-activity-time">${formatDateTime(task.created_at)}</span>
+            </div>
+          </div>
+          ${task.updated_at !== task.created_at ? `
+            <div class="task-panel-activity-item">
+              <div class="task-panel-activity-icon">
+                ${icons.edit || icons.file}
+              </div>
+              <div class="task-panel-activity-content">
+                <span class="task-panel-activity-text">Task was updated</span>
+                <span class="task-panel-activity-time">${formatDateTime(task.updated_at)}</span>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <!-- Comments Section -->
+      <div class="task-panel-section">
+        <div class="task-panel-section-header">
+          Comments
+          <span class="task-panel-section-count">0</span>
+        </div>
+        <div class="task-panel-comments">
+          <div class="task-panel-comment-input-wrapper">
+            <div class="task-panel-comment-avatar" style="background: ${stringToColor(getCurrentUser()?.name || 'User')}">
+              ${getInitials(getCurrentUser()?.name || 'U')}
+            </div>
+            <input type="text"
+                   class="task-panel-comment-input"
+                   placeholder="Add a comment..."
+                   disabled>
+          </div>
+          <div class="task-panel-empty-state">
+            <span>No comments yet. Be the first to comment!</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="task-panel-footer">
       <div class="task-panel-footer-left">
-        Created ${formatDateTime(task.created_at)}
+        <span class="task-panel-footer-info">
+          ${task.estimate_hours ? `${icons.clock} ${task.estimate_hours}h estimated` : ''}
+        </span>
       </div>
       <div class="task-panel-footer-right">
-        <button class="btn-secondary" data-action="archive-task">
-          ${icons.trash} Archive
+        <button class="btn-danger-ghost" data-action="archive-task">
+          ${icons.archive || icons.trash} Archive
         </button>
       </div>
     </div>
@@ -4656,6 +5060,20 @@ function attachTaskPanelEventListeners(taskId, projectSlug) {
   // Close button
   panel.querySelectorAll('[data-action="close-panel"]').forEach(btn => {
     btn.addEventListener('click', closeTaskPanel);
+  });
+
+  // Copy link button
+  panel.querySelectorAll('[data-action="copy-link"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const taskKey = btn.dataset.taskKey;
+      const url = `${window.location.origin}${window.location.pathname}#/projects/${projectSlug}/task/${taskKey}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        showToast('Link copied to clipboard', 'success');
+      } catch (err) {
+        showToast('Failed to copy link', 'error');
+      }
+    });
   });
 
   // Title input - auto-save on blur
@@ -4721,12 +5139,32 @@ function attachTaskPanelEventListeners(taskId, projectSlug) {
     });
   });
 
-  // Add label (placeholder)
+  // Add label
   panel.querySelectorAll('[data-action="add-label"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      showToast('Label management coming soon', 'default');
+      showPanelLabelDropdown(taskId, btn, projectSlug);
     });
   });
+
+  // Add attachment
+  const addAttachmentBtn = panel.querySelector('[data-action="add-attachment"]');
+  const taskFileInput = panel.querySelector('#task-panel-file-input');
+
+  if (addAttachmentBtn && taskFileInput) {
+    addAttachmentBtn.addEventListener('click', () => {
+      taskFileInput.click();
+    });
+
+    taskFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        const task = getTaskById(taskId);
+        if (task) {
+          handleFileUpload(e.target.files, task.project_id, taskId);
+        }
+        e.target.value = '';
+      }
+    });
+  }
 }
 
 function updateTaskField(taskId, field, value, projectSlug) {
@@ -4852,6 +5290,74 @@ function showPanelAssigneeDropdown(taskId, buttonElement, projectSlug) {
     renderTaskPanel(updatedTask, projectSlug);
     showToast('Assignee updated', 'success');
   });
+}
+
+function showPanelLabelDropdown(taskId, buttonElement, projectSlug) {
+  const task = getTaskById(taskId);
+  if (!task) return;
+
+  const project = getProjectBySlug(projectSlug);
+  if (!project) return;
+
+  const labels = getLabelsForProject(project.id);
+  const currentLabelIds = task.label_ids || [];
+
+  closePanelDropdown();
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'dropdown-menu open';
+  dropdown.id = 'panel-dropdown';
+  dropdown.innerHTML = `
+    ${labels.length === 0 ? `
+      <div class="dropdown-empty">No labels available</div>
+    ` : labels.map(label => `
+      <button class="dropdown-item dropdown-item-checkbox ${currentLabelIds.includes(label.id) ? 'active' : ''}"
+              data-value="${label.id}">
+        <span class="dropdown-checkbox ${currentLabelIds.includes(label.id) ? 'checked' : ''}">
+          ${currentLabelIds.includes(label.id) ? icons.check : ''}
+        </span>
+        <span class="dropdown-item-dot" style="background: ${label.color}"></span>
+        ${escapeHtml(label.name)}
+      </button>
+    `).join('')}
+  `;
+
+  positionDropdown(dropdown, buttonElement);
+  document.body.appendChild(dropdown);
+
+  dropdown.querySelectorAll('[data-value]').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const labelId = item.dataset.value;
+      const currentLabels = task.label_ids || [];
+      let newLabels;
+
+      if (currentLabels.includes(labelId)) {
+        newLabels = currentLabels.filter(id => id !== labelId);
+        item.classList.remove('active');
+        item.querySelector('.dropdown-checkbox').classList.remove('checked');
+        item.querySelector('.dropdown-checkbox').innerHTML = '';
+      } else {
+        newLabels = [...currentLabels, labelId];
+        item.classList.add('active');
+        item.querySelector('.dropdown-checkbox').classList.add('checked');
+        item.querySelector('.dropdown-checkbox').innerHTML = icons.check;
+      }
+
+      task.label_ids = newLabels;
+      task.updated_at = new Date().toISOString();
+
+      // Re-render panel to show updated labels
+      const updatedTask = getTaskById(taskId);
+      renderTaskPanel(updatedTask, projectSlug);
+      setupTaskPanelEventListeners(taskId, projectSlug);
+      renderProjectDetail(projectSlug);
+    });
+  });
+
+  setTimeout(() => {
+    document.addEventListener('click', handlePanelDropdownOutsideClick);
+  }, 10);
 }
 
 function positionDropdown(dropdown, buttonElement) {

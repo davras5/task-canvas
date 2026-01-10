@@ -58,6 +58,37 @@
   --color-overlay-subtle: rgb(0 0 0 / 0.1);
   --color-white-muted: rgb(255 255 255 / 0.7);
 
+  /* Colors - Semantic Text (WCAG AA compliant - 4.5:1 minimum) */
+  --color-text-primary: var(--color-gray-900);    /* 15.8:1 on white */
+  --color-text-secondary: var(--color-gray-700);  /* 9.6:1 on white - upgraded from gray-600 */
+  --color-text-muted: var(--color-gray-600);      /* 7.0:1 on white - upgraded from gray-500 */
+  --color-text-disabled: var(--color-gray-500);   /* 4.6:1 on white - upgraded from gray-400 */
+  --color-text-placeholder: var(--color-gray-500); /* 4.6:1 on white - for input placeholders */
+  --color-text-inverse: var(--color-white);
+  --color-text-link: var(--color-primary-600);
+  --color-text-link-hover: var(--color-primary-700);
+
+  /* Colors - Semantic Backgrounds (more visible differentiation) */
+  --color-bg-primary: var(--color-white);
+  --color-bg-secondary: var(--color-gray-100);    /* Upgraded from gray-50 for better contrast */
+  --color-bg-tertiary: var(--color-gray-200);     /* Upgraded from gray-100 */
+  --color-bg-inverse: var(--color-gray-900);
+  --color-bg-hover: var(--color-gray-100);
+  --color-bg-active: var(--color-gray-200);
+  --color-bg-subtle: var(--color-gray-50);        /* New: for very subtle backgrounds */
+
+  /* Colors - Semantic Borders (stronger for better visibility) */
+  --color-border-default: var(--color-gray-300);  /* Upgraded from gray-200 */
+  --color-border-muted: var(--color-gray-200);    /* Upgraded from gray-100 */
+  --color-border-strong: var(--color-gray-400);   /* Upgraded from gray-300 */
+  --color-border-focus: var(--color-primary-500);
+
+  /* Focus Ring */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: var(--color-primary-500);
+  --focus-ring-shadow: 0 0 0 var(--focus-ring-offset) var(--color-white), 0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--focus-ring-color);
+
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --font-size-xs: 0.75rem;
@@ -103,6 +134,10 @@
   --size-button-sm: 28px;
   --size-button-md: 36px;
   --size-button-lg: 40px;
+
+  /* Touch Target - WCAG 2.1 minimum 44x44px */
+  --size-touch-target: 44px;
+  --size-touch-target-sm: 36px;
 
   /* Border Widths */
   --border-width-1: 1px;
