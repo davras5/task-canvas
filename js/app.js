@@ -85,6 +85,10 @@ const state = {
   // Task detail panel state
   openTaskId: null,
   openTaskProjectSlug: null,
+
+  // File preview panel state
+  openFileId: null,
+  openFileProjectSlug: null,
 };
 
 // ==========================================================================
@@ -274,6 +278,10 @@ function getFilesForProject(projectId) {
 
 function getTaskById(id) {
   return state.tasks.find(t => t.id === id);
+}
+
+function getFileById(id) {
+  return state.files.find(f => f.id === id);
 }
 
 function formatFileSize(bytes) {
@@ -1794,6 +1802,15 @@ function attachFilesEventListeners(slug) {
       renderProjectDetail(slug);
     }, { signal });
   }
+
+  // File preview - clicking on file name opens preview panel
+  document.querySelectorAll('[data-action="preview-file"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const fileId = el.dataset.fileId;
+      openFilePreview(fileId, slug);
+    }, { signal });
+  });
 }
 
 function attachMembersEventListeners(slug) {
@@ -5382,6 +5399,198 @@ function closeTaskPanel() {
   if (overlay) {
     overlay.classList.remove('open');
   }
+}
+
+// ==========================================================================
+// File Preview Panel
+// ==========================================================================
+
+function renderFilePreviewPanelContainer() {
+  // Only create if doesn't exist
+  if (document.getElementById('file-preview-overlay')) return;
+
+  const panelOverlay = document.createElement('div');
+  panelOverlay.id = 'file-preview-overlay';
+  panelOverlay.className = 'file-preview-overlay';
+  panelOverlay.innerHTML = '<div class="file-preview-panel" id="file-preview-content"></div>';
+  document.body.appendChild(panelOverlay);
+
+  // Close on overlay click (but not panel click)
+  panelOverlay.addEventListener('click', (e) => {
+    if (e.target === panelOverlay) {
+      closeFilePreview();
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.openFileId) {
+      closeFilePreview();
+    }
+  });
+}
+
+function openFilePreview(fileId, projectSlug) {
+  const file = getFileById(fileId);
+  if (!file) return;
+
+  state.openFileId = fileId;
+  state.openFileProjectSlug = projectSlug;
+
+  renderFilePreviewPanelContainer();
+  renderFilePreviewPanel(file, projectSlug);
+
+  const overlay = document.getElementById('file-preview-overlay');
+  if (overlay) {
+    // Force reflow before adding class for animation
+    overlay.offsetHeight;
+    overlay.classList.add('open');
+  }
+}
+
+function closeFilePreview() {
+  state.openFileId = null;
+  state.openFileProjectSlug = null;
+
+  const overlay = document.getElementById('file-preview-overlay');
+  if (overlay) {
+    overlay.classList.remove('open');
+  }
+}
+
+function renderFilePreviewPanel(file, projectSlug) {
+  const project = getProjectBySlug(projectSlug);
+  if (!project || !file) return;
+
+  const uploader = file.uploaded_by ? getUserById(file.uploaded_by) : null;
+  const linkedTask = file.task_id ? getTaskById(file.task_id) : null;
+  const taskKey = linkedTask ? `${project.identifier}-${linkedTask.sequence_id}` : null;
+
+  const fileTypeIcons = {
+    pdf: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+    image: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+    document: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    spreadsheet: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>',
+    archive: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>',
+    cad: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>'
+  };
+
+  const placeholderIcon = '<svg class="file-preview-placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="9" cy="6" r="1"/><circle cx="12" cy="6" r="1"/></svg>';
+
+  const panelContent = document.getElementById('file-preview-content');
+  if (!panelContent) return;
+
+  panelContent.innerHTML = `
+    <div class="file-preview-header">
+      <div class="file-preview-header-left">
+        <div class="file-preview-icon ${file.file_type}">
+          ${fileTypeIcons[file.file_type] || fileTypeIcons.document}
+        </div>
+        <div class="file-preview-title">
+          <div class="file-preview-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
+          <div class="file-preview-meta">${formatFileSize(file.size_bytes)}</div>
+        </div>
+      </div>
+      <div class="file-preview-actions">
+        <button class="file-preview-action-btn" data-action="download-file" data-file-id="${file.id}" title="Download">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
+        <button class="file-preview-action-btn" data-action="close-file-preview" title="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="file-preview-body">
+      <div class="file-preview-content">
+        ${placeholderIcon}
+        <div class="file-preview-placeholder-text">Preview not available</div>
+        <div class="file-preview-placeholder-hint">Download the file to view its contents</div>
+      </div>
+
+      <div class="file-preview-details">
+        <div class="file-preview-details-title">File Details</div>
+        <div class="file-preview-details-grid">
+          <span class="file-preview-details-label">Name</span>
+          <span class="file-preview-details-value">${escapeHtml(file.name)}</span>
+
+          <span class="file-preview-details-label">Type</span>
+          <span class="file-preview-details-value">${file.file_type.charAt(0).toUpperCase() + file.file_type.slice(1)}</span>
+
+          <span class="file-preview-details-label">Size</span>
+          <span class="file-preview-details-value">${formatFileSize(file.size_bytes)}</span>
+
+          <span class="file-preview-details-label">Uploaded</span>
+          <span class="file-preview-details-value">${formatDateTime(file.uploaded_at)}</span>
+
+          <span class="file-preview-details-label">Uploaded by</span>
+          <span class="file-preview-details-value">
+            ${uploader ? `
+              <div class="file-preview-uploader">
+                <div class="file-preview-uploader-avatar" style="background: ${stringToColor(uploader.name)}">${getInitials(uploader.name)}</div>
+                <span>${escapeHtml(uploader.name)}</span>
+              </div>
+            ` : '<span style="color: var(--color-text-muted)">Unknown</span>'}
+          </span>
+
+          <span class="file-preview-details-label">Linked task</span>
+          <span class="file-preview-details-value">
+            ${linkedTask ? `<a href="#/projects/${projectSlug}/tasks?task=${taskKey}" data-action="open-linked-task" data-task-id="${linkedTask.id}">${escapeHtml(taskKey)}: ${escapeHtml(linkedTask.title)}</a>` : '<span style="color: var(--color-text-muted)">None</span>'}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="file-preview-footer">
+      <button class="btn-secondary" data-action="close-file-preview">Close</button>
+      <button class="btn-primary" data-action="download-file" data-file-id="${file.id}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download
+      </button>
+    </div>
+  `;
+
+  // Attach event listeners
+  attachFilePreviewEventListeners(projectSlug);
+}
+
+function attachFilePreviewEventListeners(projectSlug) {
+  // Close button
+  document.querySelectorAll('[data-action="close-file-preview"]').forEach(btn => {
+    btn.addEventListener('click', closeFilePreview);
+  });
+
+  // Download button
+  document.querySelectorAll('[data-action="download-file"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const fileId = btn.dataset.fileId;
+      const file = getFileById(fileId);
+      if (file) {
+        showToast(`Downloading "${file.name}" (demo only)`, 'info');
+      }
+    });
+  });
+
+  // Open linked task
+  document.querySelectorAll('[data-action="open-linked-task"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const taskId = link.dataset.taskId;
+      closeFilePreview();
+      openTaskPanel(taskId, projectSlug);
+    });
+  });
 }
 
 function renderTaskPanel(task, projectSlug) {
