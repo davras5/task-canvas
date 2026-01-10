@@ -558,12 +558,12 @@ img {
   align-items: center;
   justify-content: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   border-radius: var(--radius-lg);
   transition: all var(--transition-fast);
-  min-height: var(--size-touch-target-sm);
+  min-height: var(--size-touch-target);
   cursor: pointer;
 }
 
@@ -645,12 +645,12 @@ img {
   align-items: center;
   justify-content: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   border-radius: var(--radius-lg);
   transition: all var(--transition-fast);
-  min-height: var(--size-touch-target-sm);
+  min-height: var(--size-touch-target);
   cursor: pointer;
   background: var(--color-error);
   color: var(--color-text-inverse);
@@ -1485,6 +1485,15 @@ img {
 
 /* ==========================================================================
    Empty State
+
+   Base component for empty/no-data states throughout the application.
+   Use the modifiers for different contexts:
+   - .empty-state--compact: Smaller version for constrained spaces
+   - .empty-state--card: With border for standalone cards
+   - .empty-state--inline: Minimal version for inline contexts
+
+   Child elements: .empty-state-icon, .empty-state-title,
+                   .empty-state-description, .empty-state-action
    ========================================================================== */
 
 .empty-state {
@@ -2835,22 +2844,22 @@ img {
 
 .insights-kpi-icon.success {
   background: var(--color-success-bg);
-  color: #10b981;
+  color: var(--color-success);
 }
 
 .insights-kpi-icon.warning {
   background: var(--color-warning-bg);
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 .insights-kpi-icon.danger {
   background: var(--color-error-bg);
-  color: #ef4444;
+  color: var(--color-error);
 }
 
 .insights-kpi-icon.info {
   background: var(--color-info-bg);
-  color: #3b82f6;
+  color: var(--color-info);
 }
 
 .insights-kpi-data {
@@ -3065,7 +3074,7 @@ img {
   padding: var(--spacing-1) var(--spacing-2);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: white;
+  color: var(--color-white);
   border-radius: var(--radius-sm);
 }
 
@@ -3113,7 +3122,7 @@ img {
   justify-content: center;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  color: white;
+  color: var(--color-white);
 }
 
 .insights-progress-cell {
@@ -3156,18 +3165,19 @@ img {
   color: var(--color-error);
 }
 
-/* Empty State */
+/* Insights empty state - extends base empty-state pattern */
 .insights-empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--spacing-8);
-  color: var(--color-text-disabled);
+  text-align: center;
 }
 
 .insights-empty-icon {
   margin-bottom: var(--spacing-3);
+  color: var(--color-text-disabled);
 }
 
 .insights-empty-text {
@@ -3309,7 +3319,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--color-white);
   transition: all var(--transition-fast);
 }
 
@@ -3700,6 +3710,7 @@ img {
   color: var(--color-red-600);
 }
 
+/* Files empty state - extends base empty-state pattern */
 .files-empty {
   padding: var(--spacing-12) var(--spacing-6);
   text-align: center;
@@ -3709,18 +3720,18 @@ img {
   width: 64px;
   height: 64px;
   margin: 0 auto var(--spacing-4);
-  color: var(--color-gray-300);
+  color: var(--color-text-disabled);
 }
 
 .files-empty-title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-900);
+  color: var(--color-text-primary);
   margin-bottom: var(--spacing-2);
 }
 
 .files-empty-description {
-  color: var(--color-gray-500);
+  color: var(--color-text-muted);
   margin-bottom: var(--spacing-6);
 }
 
@@ -4235,7 +4246,7 @@ img {
 .dropdown-checkbox.checked {
   background: var(--color-primary-500);
   border-color: var(--color-primary-500);
-  color: white;
+  color: var(--color-white);
 }
 
 .dropdown-checkbox svg {
@@ -4320,7 +4331,8 @@ img {
 
 .dropdown-search-input:focus {
   outline: none;
-  border-color: var(--color-primary-500);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--focus-ring-inset);
 }
 
 .dropdown-search-input::placeholder {
@@ -5067,33 +5079,33 @@ img {
 }
 
 .task-panel-attachment-icon.pdf {
-  background: #fef2f2;
-  color: #dc2626;
+  background: var(--color-file-pdf-bg);
+  color: var(--color-file-pdf);
 }
 
 .task-panel-attachment-icon.image {
-  background: #f0fdf4;
-  color: #16a34a;
+  background: var(--color-file-image-bg);
+  color: var(--color-file-image);
 }
 
 .task-panel-attachment-icon.document {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--color-file-document-bg);
+  color: var(--color-file-document);
 }
 
 .task-panel-attachment-icon.spreadsheet {
-  background: #f0fdf4;
-  color: #16a34a;
+  background: var(--color-file-spreadsheet-bg);
+  color: var(--color-file-spreadsheet);
 }
 
 .task-panel-attachment-icon.archive {
-  background: #fef3c7;
-  color: #d97706;
+  background: var(--color-file-archive-bg);
+  color: var(--color-file-archive);
 }
 
 .task-panel-attachment-icon.cad {
-  background: #faf5ff;
-  color: #9333ea;
+  background: var(--color-file-cad-bg);
+  color: var(--color-file-cad);
 }
 
 .task-panel-attachment-icon.default {
@@ -5182,9 +5194,9 @@ img {
 
 .task-panel-comment-input:focus {
   outline: none;
-  border-color: var(--color-primary-500);
+  border-color: var(--color-border-focus);
   background: var(--color-white);
-  box-shadow: 0 0 0 3px var(--color-primary-100);
+  box-shadow: var(--focus-ring-inset);
 }
 
 .task-panel-comment-input:disabled {
@@ -5359,8 +5371,8 @@ img {
 .searchable-dropdown-input:focus {
   outline: none;
   background: var(--color-white);
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px var(--color-primary-100);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--focus-ring-inset);
 }
 
 .searchable-dropdown-input::placeholder {
@@ -5564,8 +5576,8 @@ img {
 
 .workflow-item-input:focus {
   outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px var(--color-primary-100);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--focus-ring-inset);
 }
 
 .workflow-item-category {
