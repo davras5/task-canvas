@@ -1158,16 +1158,17 @@ img {
    Task Table
    ========================================================================== */
 
+.task-table-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
 .task-group {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--spacing-4);
   overflow: hidden;
-}
-
-.task-group:last-child {
-  margin-bottom: 0;
 }
 
 .task-group-header {
