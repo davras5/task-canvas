@@ -22,16 +22,18 @@ const state = {
   currentFilter: 'all', // 'all', 'favorites', 'archived'
   currentProjectTab: 'tasks', // 'tasks' or 'board'
   currentInsightsTab: 'overview', // 'overview', 'members', 'tasks'
-  projectGroupBy: {}, // { projectId: 'status' | 'priority' | 'assignee' } - for list view
+  projectGroupBy: {}, // { projectId: 'none' | 'status' | 'priority' | 'assignee' } - for list view
   projectSort: {}, // { projectId: { field: 'title' | 'priority' | 'dueDate' | 'created' | 'updated', direction: 'asc' | 'desc' } }
   boardSwimlane: {}, // { projectId: 'none' | 'priority' | 'assignee' } - for board view
   showArchivedTasks: {}, // { projectId: boolean }
   assignedToMe: {}, // { projectId: boolean } - filter to show only tasks assigned to current user
+  assigneeFilter: {}, // { projectId: [userId1, userId2, ...] } - filter by selected assignees
   projectFields: {}, // { projectId: { status: bool, priority: bool, ... } }
   taskSearch: {}, // { projectId: string } - search query for filtering tasks
   collapsedGroups: new Set(),
   selectedFiles: new Set(),
   selectedTasks: new Set(),
+  selectedMembers: new Set(),
 
   // Modal state
   activeModal: null,
@@ -135,6 +137,16 @@ function getTasksForProject(projectId, includeArchived = null) {
     // Assigned to me filter
     if (filterAssignedToMe && currentUser) {
       if (t.assignee_id !== currentUser.id) return false;
+    }
+
+    // Assignee filter (multi-select)
+    const selectedAssignees = state.assigneeFilter[projectId] || [];
+    if (selectedAssignees.length > 0) {
+      // Check if task's assignee is in selected list, or if 'unassigned' is selected and task has no assignee
+      const hasUnassigned = selectedAssignees.includes('unassigned');
+      const taskAssigneeSelected = t.assignee_id && selectedAssignees.includes(t.assignee_id);
+      const taskIsUnassigned = !t.assignee_id && hasUnassigned;
+      if (!taskAssigneeSelected && !taskIsUnassigned) return false;
     }
 
     // Search filter
@@ -803,7 +815,7 @@ function renderProjectDetail(slug) {
 }
 
 function renderTabContent(tab, statuses, tasksByStatus, tasks, project) {
-  const groupBy = state.projectGroupBy[project.id] || 'status';
+  const groupBy = state.projectGroupBy[project.id] || 'none';
   const swimlane = state.boardSwimlane[project.id] || 'none';
 
   switch (tab) {
@@ -831,8 +843,11 @@ function getProjectSort(projectId) {
 function renderTaskListToolbar(project, groupBy) {
   const showArchived = state.showArchivedTasks[project.id] || false;
   const assignedToMe = state.assignedToMe[project.id] || false;
+  const selectedAssignees = state.assigneeFilter[project.id] || [];
+  const assigneeFilterCount = selectedAssignees.length;
   const sort = getProjectSort(project.id);
   const groupByLabels = {
+    none: 'None',
     status: 'Status',
     priority: 'Priority',
     assignee: 'Assignee'
@@ -881,6 +896,10 @@ function renderTaskListToolbar(project, groupBy) {
           ${icons.grid} Group by ${groupByLabels[groupBy]}
           ${icons.chevronDown}
         </button>
+        <button class="filter-btn ${assigneeFilterCount > 0 ? 'active' : ''}" data-action="toggle-assignee-filter">
+          ${icons.user} Assignee${assigneeFilterCount > 0 ? ` (${assigneeFilterCount})` : ''}
+          ${icons.chevronDown}
+        </button>
         <label class="checkbox-label">
           <input type="checkbox" class="checkbox-input" data-action="toggle-assigned-to-me" ${assignedToMe ? 'checked' : ''}>
           <span class="checkbox-custom"></span>
@@ -907,7 +926,10 @@ function renderTaskListToolbar(project, groupBy) {
 
 function renderBoardToolbar(project) {
   const showArchived = state.showArchivedTasks[project.id] || false;
+  const assignedToMe = state.assignedToMe[project.id] || false;
   const swimlane = state.boardSwimlane[project.id] || 'none';
+  const selectedAssignees = state.assigneeFilter[project.id] || [];
+  const assigneeFilterCount = selectedAssignees.length;
   const swimlaneLabels = {
     none: 'None',
     priority: 'Priority',
@@ -942,6 +964,15 @@ function renderBoardToolbar(project) {
           ${icons.grid} Group by ${swimlaneLabels[swimlane]}
           ${icons.chevronDown}
         </button>
+        <button class="filter-btn ${assigneeFilterCount > 0 ? 'active' : ''}" data-action="toggle-assignee-filter">
+          ${icons.user} Assignee${assigneeFilterCount > 0 ? ` (${assigneeFilterCount})` : ''}
+          ${icons.chevronDown}
+        </button>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-input" data-action="toggle-assigned-to-me" ${assignedToMe ? 'checked' : ''}>
+          <span class="checkbox-custom"></span>
+          <span class="checkbox-text">Assigned to me</span>
+        </label>
       </div>
       <div class="task-actions">
         <label class="checkbox-label">
@@ -965,7 +996,16 @@ function getGroupsForTasks(tasks, project, groupBy) {
   const groups = [];
   const tasksByGroup = {};
 
-  if (groupBy === 'status') {
+  if (groupBy === 'none') {
+    // No grouping - single flat list
+    groups.push({
+      id: 'all-tasks',
+      name: 'All Tasks',
+      color: null,
+      type: 'none'
+    });
+    tasksByGroup['all-tasks'] = [...tasks];
+  } else if (groupBy === 'status') {
     // Group by workflow status
     const statuses = getStatusesForProject(project.id);
     statuses.forEach(status => {
@@ -1239,8 +1279,9 @@ function attachProjectDetailEventListeners(slug) {
       }
       const tabName = tab.dataset.tab;
       state.currentProjectTab = tabName;
-      // Clear file selection when switching tabs
+      // Clear selections when switching tabs
       state.selectedFiles.clear();
+      state.selectedMembers.clear();
       renderProjectDetail(slug);
     }, { signal });
   });
@@ -1378,6 +1419,14 @@ function attachProjectDetailEventListeners(slug) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       showFieldsDropdown(btn, slug);
+    }, { signal });
+  });
+
+  // Assignee filter dropdown
+  document.querySelectorAll('[data-action="toggle-assignee-filter"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showAssigneeFilterDropdown(btn, slug);
     }, { signal });
   });
 
@@ -1606,6 +1655,9 @@ function attachProjectDetailEventListeners(slug) {
   // Files view event listeners
   attachFilesEventListeners(slug);
 
+  // Members view event listeners
+  attachMembersEventListeners(slug);
+
   // Settings view event listeners
   attachSettingsEventListeners(slug);
 
@@ -1719,6 +1771,54 @@ function attachFilesEventListeners(slug) {
       }
     }, { signal });
   }
+}
+
+function attachMembersEventListeners(slug) {
+  const project = getProjectBySlug(slug);
+  if (!project) return;
+
+  const signal = getViewSignal();
+  const tasks = getTasksForProject(project.id);
+  const memberIds = [...new Set(tasks.map(t => t.assignee_id).filter(Boolean))];
+  const members = memberIds.map(id => getUserById(id)).filter(Boolean);
+
+  // Select all members checkbox
+  document.querySelectorAll('[data-action="select-all-members"]').forEach(el => {
+    el.addEventListener('click', () => {
+      if (state.selectedMembers.size === members.length) {
+        // Deselect all
+        state.selectedMembers.clear();
+      } else {
+        // Select all
+        members.forEach(m => state.selectedMembers.add(m.id));
+      }
+      renderProjectDetail(slug);
+    }, { signal });
+  });
+
+  // Individual member checkbox
+  document.querySelectorAll('[data-action="toggle-member"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const memberId = el.dataset.memberId;
+      if (state.selectedMembers.has(memberId)) {
+        state.selectedMembers.delete(memberId);
+      } else {
+        state.selectedMembers.add(memberId);
+      }
+      renderProjectDetail(slug);
+    }, { signal });
+  });
+
+  // Delete members action
+  document.querySelectorAll('[data-action="delete-members"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (confirm(`Remove ${state.selectedMembers.size} selected members from project?`)) {
+        state.selectedMembers.clear();
+        renderProjectDetail(slug);
+      }
+    }, { signal });
+  });
 }
 
 function attachSettingsEventListeners(slug) {
@@ -2036,18 +2136,21 @@ function exportInsightsData(project) {
 function renderTaskGroup(group, tasks, project, groupBy) {
   const isCollapsed = state.collapsedGroups.has(group.id);
   const isQuickAdding = state.quickAddStatus === group.id;
+  const isFlat = group.type === 'none';
 
   return `
-    <div class="task-group" data-group-id="${group.id}" data-group-type="${group.type}">
-      <div class="task-group-header" data-toggle-group="${group.id}">
-        <span class="task-group-toggle ${isCollapsed ? 'collapsed' : ''}">
-          ${icons.chevronDown}
-        </span>
-        <div class="task-group-color" style="background: ${group.color}"></div>
+    <div class="task-group ${isFlat ? 'flat' : ''}" data-group-id="${group.id}" data-group-type="${group.type}">
+      <div class="task-group-header ${isFlat ? 'flat' : ''}" ${!isFlat ? `data-toggle-group="${group.id}"` : ''}>
+        ${!isFlat ? `
+          <span class="task-group-toggle ${isCollapsed ? 'collapsed' : ''}">
+            ${icons.chevronDown}
+          </span>
+          <div class="task-group-color" style="background: ${group.color}"></div>
+        ` : ''}
         <span class="task-group-name">${escapeHtml(group.name)}</span>
         <span class="task-group-count">${tasks.length}</span>
       </div>
-      ${!isCollapsed ? `
+      ${!isCollapsed || isFlat ? `
         <div class="task-list">
           ${tasks.map(task => renderTaskRow(task, project, group, groupBy)).join('')}
           ${isQuickAdding ? `
@@ -2145,6 +2248,7 @@ function renderMembersView(tasks, project) {
   // Get unique members who have tasks in this project
   const memberIds = [...new Set(tasks.map(t => t.assignee_id).filter(Boolean))];
   const members = memberIds.map(id => getUserById(id)).filter(Boolean);
+  const selectedCount = state.selectedMembers.size;
 
   // Calculate stats for each member
   const memberStats = members.map(member => {
@@ -2165,11 +2269,21 @@ function renderMembersView(tasks, project) {
   return `
     <div class="members-container">
       <div class="members-header">
-        <span class="members-count">${members.length} Members</span>
+        <span class="members-count">${selectedCount > 0 ? `${selectedCount} selected` : `${members.length} Members`}</span>
+        <div class="members-actions">
+          <button class="btn-bulk danger ${selectedCount === 0 ? 'disabled' : ''}" data-action="delete-members" ${selectedCount === 0 ? 'disabled' : ''}>
+            ${icons.trash} Delete
+          </button>
+        </div>
       </div>
       <table class="members-table">
         <thead>
           <tr>
+            <th class="checkbox-col">
+              <div class="member-checkbox ${getMemberSelectAllState(members)}" data-action="select-all-members">
+                ${selectedCount > 0 && selectedCount === members.length ? icons.check : ''}
+              </div>
+            </th>
             <th class="sortable">Name <span class="sort-icon">${icons.chevronDown}</span></th>
             <th class="sortable">Job Title <span class="sort-icon">${icons.chevronDown}</span></th>
             <th class="sortable">Email <span class="sort-icon">${icons.chevronDown}</span></th>
@@ -2179,30 +2293,7 @@ function renderMembersView(tasks, project) {
           </tr>
         </thead>
         <tbody>
-          ${memberStats.map(member => `
-            <tr>
-              <td>
-                <div class="member-name-cell">
-                  <div class="member-avatar" style="background: ${stringToColor(member.name)}">
-                    ${getInitials(member.name)}
-                  </div>
-                  <span class="member-name">${escapeHtml(member.name)}</span>
-                </div>
-              </td>
-              <td>${member.job_title || '-'}</td>
-              <td><span class="member-email">${escapeHtml(member.email)}</span></td>
-              <td><span class="member-tasks">${member.doneCount}/${member.taskCount}</span></td>
-              <td>
-                <div class="member-progress">
-                  <div class="member-progress-bar">
-                    <div class="member-progress-fill" style="width: ${member.progress}%"></div>
-                  </div>
-                  <span class="member-progress-text">${member.progress}%</span>
-                </div>
-              </td>
-              <td><span class="member-role ${member.role}">${member.role}</span></td>
-            </tr>
-          `).join('')}
+          ${memberStats.map(member => renderMemberRow(member)).join('')}
         </tbody>
       </table>
       <div class="members-pagination">
@@ -2218,6 +2309,46 @@ function renderMembersView(tasks, project) {
         </select>
       </div>
     </div>
+  `;
+}
+
+function getMemberSelectAllState(members) {
+  if (state.selectedMembers.size === 0) return '';
+  if (state.selectedMembers.size === members.length) return 'checked';
+  return 'indeterminate';
+}
+
+function renderMemberRow(member) {
+  const isSelected = state.selectedMembers.has(member.id);
+
+  return `
+    <tr class="${isSelected ? 'selected' : ''}" data-member-id="${member.id}">
+      <td>
+        <div class="member-checkbox ${isSelected ? 'checked' : ''}" data-action="toggle-member" data-member-id="${member.id}">
+          ${isSelected ? icons.check : ''}
+        </div>
+      </td>
+      <td>
+        <div class="member-name-cell">
+          <div class="member-avatar" style="background: ${stringToColor(member.name)}">
+            ${getInitials(member.name)}
+          </div>
+          <span class="member-name">${escapeHtml(member.name)}</span>
+        </div>
+      </td>
+      <td>${member.job_title || '-'}</td>
+      <td><span class="member-email">${escapeHtml(member.email)}</span></td>
+      <td><span class="member-tasks">${member.doneCount}/${member.taskCount}</span></td>
+      <td>
+        <div class="member-progress">
+          <div class="member-progress-bar">
+            <div class="member-progress-fill" style="width: ${member.progress}%"></div>
+          </div>
+          <span class="member-progress-text">${member.progress}%</span>
+        </div>
+      </td>
+      <td><span class="member-role ${member.role}">${member.role}</span></td>
+    </tr>
   `;
 }
 
@@ -3075,14 +3206,12 @@ function renderRoadmapView(tasks, project) {
   const totalDays = Math.ceil((timelineEnd - timelineStart) / (1000 * 60 * 60 * 24));
 
   return `
-    <div class="roadmap-container">
-      <div class="roadmap-header">
-        <div class="roadmap-controls">
-          <div class="roadmap-zoom">
-            <button class="roadmap-zoom-btn">Week</button>
-            <button class="roadmap-zoom-btn active">Month</button>
-            <button class="roadmap-zoom-btn">Quarter</button>
-          </div>
+    <div class="roadmap-view">
+      <div class="roadmap-toolbar">
+        <div class="roadmap-zoom">
+          <button class="roadmap-zoom-btn">Week</button>
+          <button class="roadmap-zoom-btn active">Month</button>
+          <button class="roadmap-zoom-btn">Quarter</button>
         </div>
         <div class="roadmap-nav">
           <button class="roadmap-nav-btn">${icons.chevronLeft}</button>
@@ -3090,7 +3219,8 @@ function renderRoadmapView(tasks, project) {
           <button class="roadmap-nav-btn">${icons.chevronRight}</button>
         </div>
       </div>
-      <div class="gantt-wrapper">
+      <div class="roadmap-content">
+        <div class="gantt-wrapper">
         <div class="gantt-sidebar">
           <div class="gantt-sidebar-header">Task Name</div>
           <div class="gantt-task-list">
@@ -3143,6 +3273,7 @@ function renderRoadmapView(tasks, project) {
             }).join('')}
             ${renderTodayLine(today, timelineStart, totalDays)}
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -4134,12 +4265,13 @@ function showGroupByDropdown(buttonElement, projectSlug) {
     return;
   }
 
-  const currentGroupBy = state.projectGroupBy[project.id] || 'status';
+  const currentGroupBy = state.projectGroupBy[project.id] || 'none';
 
   // Remove any existing dropdown
   closeDropdown();
 
   const groupByOptions = [
+    { value: 'none', label: 'None' },
     { value: 'status', label: 'Status' },
     { value: 'priority', label: 'Priority' },
     { value: 'assignee', label: 'Assignee' }
@@ -4400,6 +4532,128 @@ function showFieldsDropdown(buttonElement, projectSlug) {
   }, 10);
 }
 
+function showAssigneeFilterDropdown(buttonElement, projectSlug) {
+  const project = getProjectBySlug(projectSlug);
+  if (!project) return;
+
+  // If this dropdown is already open, close it and return
+  if (state.activeDropdown === 'assignee-filter-dropdown') {
+    closeDropdown();
+    return;
+  }
+
+  // Remove any existing dropdown
+  closeDropdown();
+
+  // Get all users who have tasks in this project (plus current assignees)
+  const allTasks = state.tasks.filter(t => t.project_id === project.id);
+  const assigneeIds = [...new Set(allTasks.map(t => t.assignee_id).filter(Boolean))];
+  const projectMembers = assigneeIds.map(id => getUserById(id)).filter(Boolean);
+
+  // Sort members alphabetically
+  projectMembers.sort((a, b) => a.name.localeCompare(b.name));
+
+  const selectedAssignees = state.assigneeFilter[project.id] || [];
+  const hasUnassignedTasks = allTasks.some(t => !t.assignee_id);
+
+  // Create dropdown
+  const dropdown = document.createElement('div');
+  dropdown.className = 'dropdown-menu assignee-filter-dropdown open';
+  dropdown.id = 'assignee-filter-dropdown';
+  dropdown.innerHTML = `
+    <div class="dropdown-header">Filter by Assignee</div>
+    <div class="dropdown-search">
+      <input type="text" class="dropdown-search-input" placeholder="Search members...">
+    </div>
+    <div class="dropdown-checkbox-list">
+      ${hasUnassignedTasks ? `
+        <label class="dropdown-checkbox-item" data-assignee-id="unassigned">
+          <input type="checkbox" data-assignee="unassigned" ${selectedAssignees.includes('unassigned') ? 'checked' : ''}>
+          <div class="dropdown-checkbox-avatar unassigned">
+            ${icons.x}
+          </div>
+          <span class="dropdown-checkbox-label">Unassigned</span>
+        </label>
+      ` : ''}
+      ${projectMembers.map(member => `
+        <label class="dropdown-checkbox-item" data-assignee-id="${member.id}">
+          <input type="checkbox" data-assignee="${member.id}" ${selectedAssignees.includes(member.id) ? 'checked' : ''}>
+          <div class="dropdown-checkbox-avatar" style="background: ${stringToColor(member.name)}">
+            ${getInitials(member.name)}
+          </div>
+          <span class="dropdown-checkbox-label">${escapeHtml(member.name)}</span>
+        </label>
+      `).join('')}
+    </div>
+    ${selectedAssignees.length > 0 ? `
+      <div class="dropdown-footer">
+        <button class="dropdown-clear-btn" data-action="clear-assignee-filter">Clear filter</button>
+      </div>
+    ` : ''}
+  `;
+
+  // Position dropdown
+  const rect = buttonElement.getBoundingClientRect();
+  dropdown.style.position = 'fixed';
+  dropdown.style.top = `${rect.bottom + 4}px`;
+  dropdown.style.left = `${rect.left}px`;
+
+  document.body.appendChild(dropdown);
+  state.activeDropdown = 'assignee-filter-dropdown';
+
+  // Handle search
+  const searchInput = dropdown.querySelector('.dropdown-search-input');
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    dropdown.querySelectorAll('.dropdown-checkbox-item').forEach(item => {
+      const label = item.querySelector('.dropdown-checkbox-label').textContent.toLowerCase();
+      item.style.display = label.includes(query) ? '' : 'none';
+    });
+  });
+
+  // Handle checkbox changes
+  dropdown.querySelectorAll('input[data-assignee]').forEach(checkbox => {
+    checkbox.addEventListener('change', (e) => {
+      const assigneeId = e.target.dataset.assignee;
+      const isChecked = e.target.checked;
+
+      // Initialize filter array if not exists
+      if (!state.assigneeFilter[project.id]) {
+        state.assigneeFilter[project.id] = [];
+      }
+
+      if (isChecked) {
+        if (!state.assigneeFilter[project.id].includes(assigneeId)) {
+          state.assigneeFilter[project.id].push(assigneeId);
+        }
+      } else {
+        state.assigneeFilter[project.id] = state.assigneeFilter[project.id].filter(id => id !== assigneeId);
+      }
+
+      // Re-render to apply changes
+      renderProjectDetail(projectSlug);
+    });
+  });
+
+  // Handle clear filter button
+  const clearBtn = dropdown.querySelector('[data-action="clear-assignee-filter"]');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      state.assigneeFilter[project.id] = [];
+      closeDropdown();
+      renderProjectDetail(projectSlug);
+    });
+  }
+
+  // Focus search input
+  searchInput.focus();
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', handleDropdownOutsideClick);
+  }, 10);
+}
+
 function showPriorityDropdown(taskId, buttonElement, projectSlug) {
   const task = getTaskById(taskId);
   if (!task) return;
@@ -4644,7 +4898,8 @@ function handleDropdownOutsideClick(e) {
     'sort-dropdown',
     'group-by-dropdown',
     'swimlane-dropdown',
-    'fields-dropdown'
+    'fields-dropdown',
+    'assignee-filter-dropdown'
   ];
 
   // Check if click is inside any active dropdown
@@ -4668,7 +4923,8 @@ function closeDropdown() {
     'sort-dropdown',
     'group-by-dropdown',
     'swimlane-dropdown',
-    'fields-dropdown'
+    'fields-dropdown',
+    'assignee-filter-dropdown'
   ];
 
   for (const id of dropdownIds) {
