@@ -27,15 +27,33 @@
   --color-primary-600: #2563eb;
   --color-primary-700: #1d4ed8;
 
-  /* Colors - Accent */
+  /* Colors - Accent (extended palette for theming) */
   --color-purple-500: #8b5cf6;
   --color-pink-500: #ec4899;
   --color-cyan-500: #06b6d4;
   --color-lime-500: #84cc16;
   --color-indigo-500: #6366f1;
   --color-green-500: #10b981;
+  --color-green-600: #16a34a;
   --color-amber-500: #f59e0b;
+  --color-amber-600: #d97706;
+  --color-amber-700: #92400e;
   --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+
+  /* Colors - File Type Backgrounds */
+  --color-file-pdf-bg: #fef2f2;
+  --color-file-pdf: #dc2626;
+  --color-file-image-bg: #f0fdf4;
+  --color-file-image: #16a34a;
+  --color-file-document-bg: #eff6ff;
+  --color-file-document: #2563eb;
+  --color-file-spreadsheet-bg: #f0fdf4;
+  --color-file-spreadsheet: #16a34a;
+  --color-file-archive-bg: #fef3c7;
+  --color-file-archive: #d97706;
+  --color-file-cad-bg: #faf5ff;
+  --color-file-cad: #9333ea;
 
   /* Colors - Status */
   --color-success: #22c55e;
@@ -45,8 +63,12 @@
 
   /* Colors - Semantic Backgrounds */
   --color-success-bg: rgb(34 197 94 / 0.1);
+  --color-success-bg-solid: #f0fdf4;
   --color-warning-bg: rgb(245 158 11 / 0.1);
+  --color-warning-bg-solid: #fef3c7;
+  --color-warning-text: #92400e;
   --color-error-bg: rgb(239 68 68 / 0.1);
+  --color-error-bg-solid: #fef2f2;
   --color-error-bg-hover: rgb(239 68 68 / 0.15);
   --color-error-bg-subtle: rgb(239 68 68 / 0.02);
   --color-error-border: rgb(239 68 68 / 0.3);
@@ -88,6 +110,7 @@
   --focus-ring-offset: 2px;
   --focus-ring-color: var(--color-primary-500);
   --focus-ring-shadow: 0 0 0 var(--focus-ring-offset) var(--color-white), 0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--focus-ring-color);
+  --focus-ring-inset: 0 0 0 3px var(--color-primary-100);  /* For inputs without offset */
 
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -126,10 +149,12 @@
   --size-icon-xl: 32px;
   --size-icon-2xl: 48px;
 
+  --size-avatar-xs: 20px;
   --size-avatar-sm: 24px;
   --size-avatar-md: 32px;
-  --size-avatar-lg: 40px;
-  --size-avatar-xl: 48px;
+  --size-avatar-lg: 36px;
+  --size-avatar-xl: 40px;
+  --size-avatar-2xl: 48px;
 
   --size-button-sm: 28px;
   --size-button-md: 36px;
@@ -168,8 +193,13 @@
   --transition-slow: 300ms ease;
 
   /* Z-Index Scale */
+  --z-base: 1;
+  --z-gantt-bar: 5;
+  --z-sticky-sidebar: 10;
   --z-dropdown: 100;
   --z-sticky: 200;
+  --z-panel-backdrop: 200;
+  --z-panel: 201;
   --z-modal-backdrop: 900;
   --z-modal: 1000;
   --z-toast: 1100;
