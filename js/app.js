@@ -4,6 +4,43 @@
  */
 
 // ==========================================================================
+// Color System - Centralized color palette using CSS variables
+// ==========================================================================
+
+/**
+ * Gets the computed value of a CSS custom property
+ * @param {string} varName - CSS variable name (e.g., '--color-primary-500')
+ * @returns {string} - The computed color value
+ */
+function getCSSVar(varName) {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+
+/**
+ * Color palette mapped to CSS variable names for consistency with design tokens.
+ * These correspond to --color-palette-* variables in tokens.css
+ */
+const COLOR_PALETTE = {
+  blue:    { hex: '#3b82f6', cssVar: '--color-palette-1', name: 'Blue' },
+  purple:  { hex: '#8b5cf6', cssVar: '--color-palette-2', name: 'Purple' },
+  pink:    { hex: '#ec4899', cssVar: '--color-palette-3', name: 'Pink' },
+  red:     { hex: '#ef4444', cssVar: '--color-palette-4', name: 'Red' },
+  amber:   { hex: '#f59e0b', cssVar: '--color-palette-5', name: 'Amber' },
+  green:   { hex: '#22c55e', cssVar: '--color-palette-6', name: 'Green' },
+  cyan:    { hex: '#06b6d4', cssVar: '--color-palette-7', name: 'Cyan' },
+  indigo:  { hex: '#6366f1', cssVar: '--color-palette-8', name: 'Indigo' },
+  gray:    { hex: '#6b7280', cssVar: '--color-palette-fallback', name: 'Gray' },
+  lime:    { hex: '#84cc16', cssVar: '--color-lime-500', name: 'Lime' },
+  emerald: { hex: '#10b981', cssVar: '--color-green-500', name: 'Emerald' },
+};
+
+// Pre-computed arrays for quick access
+const AVATAR_COLORS = ['blue', 'purple', 'pink', 'red', 'amber', 'green', 'cyan', 'indigo'].map(k => COLOR_PALETTE[k].hex);
+const PROJECT_COLORS = ['blue', 'purple', 'pink', 'red', 'amber', 'green', 'cyan', 'indigo'].map(k => COLOR_PALETTE[k].hex);
+const WORKFLOW_COLORS = ['gray', 'blue', 'purple', 'pink', 'red', 'amber', 'green', 'cyan'].map(k => COLOR_PALETTE[k].hex);
+const FALLBACK_COLOR = COLOR_PALETTE.gray.hex;
+
+// ==========================================================================
 // State
 // ==========================================================================
 
@@ -1036,10 +1073,10 @@ function getGroupsForTasks(tasks, project, groupBy) {
     // Group by priority
     const priorityOrder = ['priority-high', 'priority-medium', 'priority-low', 'priority-none'];
     const priorityGroups = [
-      { id: 'priority-high', name: 'High', color: '#ef4444', type: 'priority', priorityId: 'priority-high' },
-      { id: 'priority-medium', name: 'Medium', color: '#f59e0b', type: 'priority', priorityId: 'priority-medium' },
-      { id: 'priority-low', name: 'Low', color: '#10b981', type: 'priority', priorityId: 'priority-low' },
-      { id: 'priority-none', name: 'No Priority', color: '#6b7280', type: 'priority', priorityId: null }
+      { id: 'priority-high', name: 'High', color: COLOR_PALETTE.red.hex, type: 'priority', priorityId: 'priority-high' },
+      { id: 'priority-medium', name: 'Medium', color: COLOR_PALETTE.amber.hex, type: 'priority', priorityId: 'priority-medium' },
+      { id: 'priority-low', name: 'Low', color: COLOR_PALETTE.emerald.hex, type: 'priority', priorityId: 'priority-low' },
+      { id: 'priority-none', name: 'No Priority', color: COLOR_PALETTE.gray.hex, type: 'priority', priorityId: null }
     ];
     priorityGroups.forEach(pg => {
       groups.push(pg);
@@ -1061,7 +1098,7 @@ function getGroupsForTasks(tasks, project, groupBy) {
     groups.push({
       id: 'unassigned',
       name: 'Unassigned',
-      color: '#6b7280',
+      color: FALLBACK_COLOR,
       type: 'assignee',
       assigneeId: null
     });
@@ -1183,14 +1220,14 @@ function getSwimlanes(tasks, project, swimlane) {
         color: priority.color,
         filter: t => t.priority_id === priority.id
       }));
-    lanes.push({ id: 'priority-none', name: 'No Priority', color: '#6b7280', filter: t => !t.priority_id });
+    lanes.push({ id: 'priority-none', name: 'No Priority', color: FALLBACK_COLOR, filter: t => !t.priority_id });
     return lanes;
   }
 
   if (swimlane === 'assignee') {
     const projectMembers = getProjectMembers(project.id);
     const lanes = [
-      { id: 'unassigned', name: 'Unassigned', color: '#6b7280', filter: t => !t.assignee_id }
+      { id: 'unassigned', name: 'Unassigned', color: FALLBACK_COLOR, filter: t => !t.assignee_id }
     ];
     projectMembers.forEach(member => {
       lanes.push({
@@ -2090,7 +2127,7 @@ function exportInsightsData(project) {
   tasks.forEach(t => {
     const status = getStatusById(t.status_id);
     const statusName = status?.name || 'Unknown';
-    const statusColor = status?.color || '#6b7280';
+    const statusColor = status?.color || FALLBACK_COLOR;
     if (!statusCounts[statusName]) {
       statusCounts[statusName] = { count: 0, color: statusColor };
     }
@@ -2396,15 +2433,16 @@ function renderMemberRow(member) {
 // ==========================================================================
 
 function renderSettingsView(project) {
+  // Use centralized COLOR_PALETTE for settings color options
   const colorOptions = [
-    { value: '#3b82f6', name: 'Blue' },
-    { value: '#8b5cf6', name: 'Purple' },
-    { value: '#10b981', name: 'Green' },
-    { value: '#f59e0b', name: 'Amber' },
-    { value: '#ef4444', name: 'Red' },
-    { value: '#ec4899', name: 'Pink' },
-    { value: '#06b6d4', name: 'Cyan' },
-    { value: '#84cc16', name: 'Lime' },
+    { value: COLOR_PALETTE.blue.hex, name: COLOR_PALETTE.blue.name },
+    { value: COLOR_PALETTE.purple.hex, name: COLOR_PALETTE.purple.name },
+    { value: COLOR_PALETTE.emerald.hex, name: COLOR_PALETTE.emerald.name },
+    { value: COLOR_PALETTE.amber.hex, name: COLOR_PALETTE.amber.name },
+    { value: COLOR_PALETTE.red.hex, name: COLOR_PALETTE.red.name },
+    { value: COLOR_PALETTE.pink.hex, name: COLOR_PALETTE.pink.name },
+    { value: COLOR_PALETTE.cyan.hex, name: COLOR_PALETTE.cyan.name },
+    { value: COLOR_PALETTE.lime.hex, name: COLOR_PALETTE.lime.name },
   ];
 
   return `
@@ -2700,7 +2738,7 @@ function renderInsightsView(tasks, project) {
   tasks.forEach(t => {
     const status = getStatusById(t.status_id);
     const statusName = status?.name || 'Unknown';
-    const statusColor = status?.color || '#6b7280';
+    const statusColor = status?.color || FALLBACK_COLOR;
     if (!statusCounts[statusName]) {
       statusCounts[statusName] = { count: 0, color: statusColor };
     }
@@ -2891,7 +2929,7 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
               return `
                 <tr>
                   <td>${escapeHtml(task.title)}</td>
-                  <td><span class="insights-status-badge" style="background: ${status?.color || '#6b7280'}">${status?.name || 'Unknown'}</span></td>
+                  <td><span class="insights-status-badge" style="background: ${status?.color || FALLBACK_COLOR}">${status?.name || 'Unknown'}</span></td>
                   <td>${task.due_date ? formatDate(task.due_date) : 'N/A'}</td>
                   <td>${formatRelativeTime(task.updated_at)}</td>
                 </tr>
@@ -2931,9 +2969,9 @@ function renderDonutSegments(segments, total) {
 
 function renderPriorityBars(priorityCounts, total) {
   const priorities = [
-    { name: 'Low', color: '#10b981', count: priorityCounts['Low'] || 0 },
-    { name: 'Medium', color: '#f59e0b', count: priorityCounts['Medium'] || 0 },
-    { name: 'High', color: '#ef4444', count: priorityCounts['High'] || 0 }
+    { name: 'Low', color: COLOR_PALETTE.emerald.hex, count: priorityCounts['Low'] || 0 },
+    { name: 'Medium', color: COLOR_PALETTE.amber.hex, count: priorityCounts['Medium'] || 0 },
+    { name: 'High', color: COLOR_PALETTE.red.hex, count: priorityCounts['High'] || 0 }
   ];
 
   const maxCount = Math.max(...priorities.map(p => p.count), 1);
@@ -3130,7 +3168,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
                   return `
                     <tr>
                       <td>${escapeHtml(task.title)}</td>
-                      <td><span class="insights-status-badge" style="background: ${status?.color || '#6b7280'}">${status?.name || 'Unknown'}</span></td>
+                      <td><span class="insights-status-badge" style="background: ${status?.color || FALLBACK_COLOR}">${status?.name || 'Unknown'}</span></td>
                       <td>${formatDate(task.due_date)}</td>
                       <td class="text-danger">${daysOverdue} days</td>
                     </tr>
@@ -3162,7 +3200,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
                   return `
                     <tr>
                       <td>${escapeHtml(task.title)}</td>
-                      <td><span class="insights-status-badge" style="background: ${status?.color || '#6b7280'}">${status?.name || 'Unknown'}</span></td>
+                      <td><span class="insights-status-badge" style="background: ${status?.color || FALLBACK_COLOR}">${status?.name || 'Unknown'}</span></td>
                       <td>${formatDate(task.due_date)}</td>
                       <td>${formatDate(task.completed_at)}</td>
                     </tr>
@@ -3196,7 +3234,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
                   return `
                     <tr>
                       <td>${escapeHtml(task.title)}</td>
-                      <td><span class="insights-status-badge" style="background: ${status?.color || '#6b7280'}">${status?.name || 'Unknown'}</span></td>
+                      <td><span class="insights-status-badge" style="background: ${status?.color || FALLBACK_COLOR}">${status?.name || 'Unknown'}</span></td>
                       <td>${formatDate(task.due_date)}</td>
                       <td>${formatDate(task.completed_at)}</td>
                     </tr>
@@ -3287,7 +3325,7 @@ function renderRoadmapView(tasks, project) {
               const status = getStatusById(task.status_id);
               return `
                 <div class="gantt-task-item">
-                  <div class="gantt-task-color" style="background: ${status?.color || '#6b7280'}"></div>
+                  <div class="gantt-task-color" style="background: ${status?.color || FALLBACK_COLOR}"></div>
                   <span class="gantt-task-name">${escapeHtml(task.title)}</span>
                   ${assignee ? `
                     <div class="gantt-task-assignee" style="background: ${stringToColor(assignee.name)}">
@@ -3315,7 +3353,7 @@ function renderRoadmapView(tasks, project) {
           <div class="gantt-rows">
             ${tasks.map(task => {
               const status = getStatusById(task.status_id);
-              const barStyle = getGanttBarStyle(task, timelineStart, totalDays, status?.color || '#6b7280');
+              const barStyle = getGanttBarStyle(task, timelineStart, totalDays, status?.color || FALLBACK_COLOR);
               return `
                 <div class="gantt-row">
                   ${months.map(month => `
@@ -3451,16 +3489,12 @@ function getInitials(name) {
 }
 
 function stringToColor(str) {
-  if (!str) return '#6b7280';
+  if (!str) return FALLBACK_COLOR;
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const colors = [
-    '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444',
-    '#f59e0b', '#22c55e', '#06b6d4', '#6366f1'
-  ];
-  return colors[Math.abs(hash) % colors.length];
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
 function hexToRgba(hex, alpha) {
@@ -3910,10 +3944,8 @@ function handleCreateTask(projectSlug) {
 // Create Project Modal
 // ==========================================================================
 
-const projectColors = [
-  '#3b82f6', '#8b5cf6', '#ec4899', '#ef4444',
-  '#f59e0b', '#22c55e', '#06b6d4', '#6366f1'
-];
+// Use centralized PROJECT_COLORS from the color system
+const projectColors = PROJECT_COLORS;
 
 function showCreateProjectModal() {
   const bodyHtml = `
@@ -4038,12 +4070,12 @@ function handleCreateProject() {
     updated_at: new Date().toISOString()
   };
 
-  // Create default statuses for the project
+  // Create default statuses for the project (using centralized COLOR_PALETTE)
   const defaultStatuses = [
-    { name: 'Backlog', color: '#6b7280', category: 'todo', sort_order: 1 },
-    { name: 'To Do', color: '#3b82f6', category: 'todo', sort_order: 2 },
-    { name: 'In Progress', color: '#f59e0b', category: 'in_progress', sort_order: 3 },
-    { name: 'Done', color: '#22c55e', category: 'done', sort_order: 4 }
+    { name: 'Backlog', color: COLOR_PALETTE.gray.hex, category: 'todo', sort_order: 1 },
+    { name: 'To Do', color: COLOR_PALETTE.blue.hex, category: 'todo', sort_order: 2 },
+    { name: 'In Progress', color: COLOR_PALETTE.amber.hex, category: 'in_progress', sort_order: 3 },
+    { name: 'Done', color: COLOR_PALETTE.green.hex, category: 'done', sort_order: 4 }
   ];
 
   defaultStatuses.forEach(status => {
@@ -4390,10 +4422,8 @@ function handleEditMember(memberId, projectSlug) {
 // Manage Workflow Modal
 // ==========================================================================
 
-const workflowColors = [
-  '#6b7280', '#3b82f6', '#8b5cf6', '#ec4899',
-  '#ef4444', '#f59e0b', '#22c55e', '#06b6d4'
-];
+// Use centralized WORKFLOW_COLORS from the color system
+const workflowColors = WORKFLOW_COLORS;
 
 function showManageWorkflowModal(projectSlug) {
   const project = getProjectBySlug(projectSlug);
@@ -5368,7 +5398,7 @@ function renderTaskPanel(task, projectSlug) {
   const taskFiles = state.files.filter(f => f.task_id === task.id);
 
   const statusBg = status ? hexToRgba(status.color, 0.15) : '';
-  const statusText = status?.color || '#6b7280';
+  const statusText = status?.color || FALLBACK_COLOR;
   const priorityBg = priority ? hexToRgba(priority.color, 0.15) : '';
   const priorityText = priority?.color || '';
 
