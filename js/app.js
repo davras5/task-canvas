@@ -35,6 +35,10 @@ const state = {
   selectedTasks: new Set(),
   selectedMembers: new Set(),
 
+  // Pagination state
+  filesPagination: { page: 1, pageSize: 10 },
+  membersPagination: { page: 1, pageSize: 10 },
+
   // Modal state
   activeModal: null,
   activeDropdown: null,
@@ -516,6 +520,12 @@ const icons = {
   </svg>`,
   user: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>`,
+  userPlus: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/>
+  </svg>`,
+  edit: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
   </svg>`,
   checkCircle: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
@@ -1719,56 +1729,32 @@ function attachFilesEventListeners(slug) {
     }, { signal });
   });
 
-  // File upload - drop zone click
-  const dropZone = document.getElementById('files-drop-zone');
-  const filesInput = document.getElementById('files-input');
-
-  if (dropZone && filesInput) {
-    dropZone.addEventListener('click', () => {
-      filesInput.click();
+  // Upload Files button - opens modal
+  document.querySelectorAll('[data-action="open-upload-modal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showUploadFilesModal(slug);
     }, { signal });
+  });
 
-    filesInput.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) {
-        handleFileUpload(e.target.files, project.id, null);
-        e.target.value = ''; // Reset input
+  // Pagination controls
+  const pagination = document.querySelector('[data-pagination-type="files"]');
+  if (pagination) {
+    pagination.querySelector('[data-action="prev-page"]')?.addEventListener('click', () => {
+      if (state.filesPagination.page > 1) {
+        state.filesPagination.page--;
+        renderProjectDetail(slug);
       }
     }, { signal });
 
-    // Drag and drop handlers
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('dragover');
+    pagination.querySelector('[data-action="next-page"]')?.addEventListener('click', () => {
+      state.filesPagination.page++;
+      renderProjectDetail(slug);
     }, { signal });
 
-    dropZone.addEventListener('dragleave', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-    }, { signal });
-
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      if (e.dataTransfer.files.length > 0) {
-        handleFileUpload(e.dataTransfer.files, project.id, null);
-      }
-    }, { signal });
-  }
-
-  // File upload - empty state button
-  const uploadBtnEmpty = document.querySelector('[data-action="upload-files-empty"]');
-  const filesInputEmpty = document.getElementById('files-input-empty');
-
-  if (uploadBtnEmpty && filesInputEmpty) {
-    uploadBtnEmpty.addEventListener('click', () => {
-      filesInputEmpty.click();
-    }, { signal });
-
-    filesInputEmpty.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) {
-        handleFileUpload(e.target.files, project.id, null);
-        e.target.value = '';
-      }
+    pagination.querySelector('[data-action="change-page-size"]')?.addEventListener('change', (e) => {
+      state.filesPagination.pageSize = parseInt(e.target.value);
+      state.filesPagination.page = 1; // Reset to first page
+      renderProjectDetail(slug);
     }, { signal });
   }
 }
@@ -1817,6 +1803,46 @@ function attachMembersEventListeners(slug) {
         state.selectedMembers.clear();
         renderProjectDetail(slug);
       }
+    }, { signal });
+  });
+
+  // Pagination controls
+  const pagination = document.querySelector('[data-pagination-type="members"]');
+  if (pagination) {
+    pagination.querySelector('[data-action="prev-page"]')?.addEventListener('click', () => {
+      if (state.membersPagination.page > 1) {
+        state.membersPagination.page--;
+        renderProjectDetail(slug);
+      }
+    }, { signal });
+
+    pagination.querySelector('[data-action="next-page"]')?.addEventListener('click', () => {
+      state.membersPagination.page++;
+      renderProjectDetail(slug);
+    }, { signal });
+
+    pagination.querySelector('[data-action="change-page-size"]')?.addEventListener('change', (e) => {
+      state.membersPagination.pageSize = parseInt(e.target.value);
+      state.membersPagination.page = 1; // Reset to first page
+      renderProjectDetail(slug);
+    }, { signal });
+  }
+
+  // Add User button - opens invite modal
+  document.querySelectorAll('[data-action="add-member"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const projectSlug = btn.dataset.projectSlug;
+      showInviteMemberModal(projectSlug);
+    }, { signal });
+  });
+
+  // Edit User button - opens edit modal for selected member
+  document.querySelectorAll('[data-action="edit-member"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.selectedMembers.size !== 1) return;
+      const memberId = [...state.selectedMembers][0];
+      const projectSlug = btn.dataset.projectSlug;
+      showEditMemberModal(memberId, projectSlug);
     }, { signal });
   });
 }
@@ -2266,6 +2292,10 @@ function renderMembersView(tasks, project) {
     };
   });
 
+  // Pagination
+  const { page, pageSize } = state.membersPagination;
+  const paginatedMembers = getPaginatedItems(memberStats, page, pageSize);
+
   return `
     <div class="members-container">
       <div class="members-header">
@@ -2273,6 +2303,12 @@ function renderMembersView(tasks, project) {
         <div class="members-actions">
           <button class="btn-bulk danger ${selectedCount === 0 ? 'disabled' : ''}" data-action="delete-members" ${selectedCount === 0 ? 'disabled' : ''}>
             ${icons.trash} Delete
+          </button>
+          <button class="btn-secondary ${selectedCount !== 1 ? 'disabled' : ''}" data-action="edit-member" data-project-slug="${project.slug}" ${selectedCount !== 1 ? 'disabled' : ''}>
+            ${icons.edit} Edit
+          </button>
+          <button class="btn-secondary" data-action="add-member" data-project-slug="${project.slug}">
+            ${icons.userPlus} Add User
           </button>
         </div>
       </div>
@@ -2293,21 +2329,16 @@ function renderMembersView(tasks, project) {
           </tr>
         </thead>
         <tbody>
-          ${memberStats.map(member => renderMemberRow(member)).join('')}
+          ${paginatedMembers.map(member => renderMemberRow(member)).join('')}
         </tbody>
       </table>
-      <div class="members-pagination">
-        <div class="pagination-pages">
-          <button class="pagination-btn">${icons.chevronLeft}</button>
-          <button class="pagination-btn active">1</button>
-          <button class="pagination-btn">${icons.chevronRight}</button>
-        </div>
-        <select class="pagination-select">
-          <option>20 / page</option>
-          <option>50 / page</option>
-          <option>100 / page</option>
-        </select>
-      </div>
+      ${renderPagination({
+        totalItems: memberStats.length,
+        currentPage: page,
+        pageSize: pageSize,
+        itemLabel: 'members',
+        paginationType: 'members'
+      })}
     </div>
   `;
 }
@@ -2474,6 +2505,10 @@ function renderFilesView(project) {
     return renderFilesEmptyState();
   }
 
+  // Pagination
+  const { page, pageSize } = state.filesPagination;
+  const paginatedFiles = getPaginatedItems(files, page, pageSize);
+
   return `
     <div class="files-container">
       <div class="files-header">
@@ -2485,7 +2520,7 @@ function renderFilesView(project) {
           <button class="btn-bulk danger ${selectedCount === 0 ? 'disabled' : ''}" data-action="delete-selected" ${selectedCount === 0 ? 'disabled' : ''}>
             ${icons.trash} Delete
           </button>
-          <button class="btn-secondary">
+          <button class="btn-secondary" data-action="open-upload-modal">
             ${icons.upload} Upload Files
           </button>
         </div>
@@ -2506,13 +2541,16 @@ function renderFilesView(project) {
           </tr>
         </thead>
         <tbody>
-          ${files.map(file => renderFileRow(file, project)).join('')}
+          ${paginatedFiles.map(file => renderFileRow(file, project)).join('')}
         </tbody>
       </table>
-      <div class="files-drop-zone" id="files-drop-zone" data-action="upload-files">
-        <input type="file" id="files-input" class="files-input" multiple hidden>
-        ${icons.upload} Drop files here or click to upload
-      </div>
+      ${renderPagination({
+        totalItems: files.length,
+        currentPage: page,
+        pageSize: pageSize,
+        itemLabel: 'files',
+        paginationType: 'files'
+      })}
     </div>
   `;
 }
@@ -2603,10 +2641,9 @@ function renderFilesEmptyState() {
         <p class="files-empty-description">
           Upload files to share documents, images, and other attachments with your team.
         </p>
-        <button class="btn-primary" data-action="upload-files-empty">
+        <button class="btn-primary" data-action="open-upload-modal">
           ${icons.upload} Upload Files
         </button>
-        <input type="file" id="files-input-empty" class="files-input" multiple hidden>
       </div>
     </div>
   `;
@@ -3451,6 +3488,141 @@ function generateId(prefix) {
 }
 
 // ==========================================================================
+// Dropdown Factory
+// ==========================================================================
+
+/**
+ * Creates and positions a dropdown menu
+ * @param {Object} options - Dropdown configuration
+ * @param {string} options.id - Unique dropdown ID
+ * @param {HTMLElement} options.anchor - Element to position dropdown below
+ * @param {string} options.content - HTML content for the dropdown
+ * @param {string} [options.className] - Additional CSS classes
+ * @param {boolean} [options.toggle=true] - If true, close dropdown when already open
+ * @returns {HTMLElement|null} The dropdown element, or null if toggled closed
+ */
+function createDropdown({ id, anchor, content, className = '', toggle = true }) {
+  // Toggle behavior: if this dropdown is already open, close it
+  if (toggle && state.activeDropdown === id) {
+    closeDropdown();
+    return null;
+  }
+
+  // Close any existing dropdown
+  closeDropdown();
+
+  // Create dropdown element
+  const dropdown = document.createElement('div');
+  dropdown.className = `dropdown-menu open ${className}`.trim();
+  dropdown.id = id;
+  dropdown.innerHTML = content;
+
+  // Position below anchor element
+  const rect = anchor.getBoundingClientRect();
+  dropdown.style.position = 'fixed';
+  dropdown.style.top = `${rect.bottom + 4}px`;
+  dropdown.style.left = `${rect.left}px`;
+
+  // Add to DOM and track state
+  document.body.appendChild(dropdown);
+  state.activeDropdown = id;
+
+  // Setup outside click handler
+  setTimeout(() => {
+    document.addEventListener('click', handleDropdownOutsideClick);
+  }, 10);
+
+  return dropdown;
+}
+
+/**
+ * Attaches event listeners to multiple elements matching a selector
+ * @param {HTMLElement|Document} container - Container to search within
+ * @param {string} selector - CSS selector for target elements
+ * @param {string} event - Event type (e.g., 'click', 'change')
+ * @param {Function} handler - Event handler function, receives (element, event)
+ * @param {Object} [options] - addEventListener options
+ */
+function addListeners(container, selector, event, handler, options = {}) {
+  container.querySelectorAll(selector).forEach(el => {
+    el.addEventListener(event, (e) => handler(el, e), options);
+  });
+}
+
+// ==========================================================================
+// Pagination Component
+// ==========================================================================
+
+/**
+ * Renders a pagination component
+ * @param {Object} options - Pagination configuration
+ * @param {number} options.totalItems - Total number of items
+ * @param {number} options.currentPage - Current page (1-indexed)
+ * @param {number} options.pageSize - Items per page
+ * @param {string} options.itemLabel - Label for items (e.g., 'members', 'files')
+ * @param {string} options.paginationType - Type identifier for data attributes
+ * @returns {string} HTML string for pagination component
+ */
+function renderPagination({ totalItems, currentPage, pageSize, itemLabel, paginationType }) {
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+
+  // Don't show pagination if no items
+  if (totalItems === 0) {
+    return '';
+  }
+
+  const prevDisabled = currentPage <= 1;
+  const nextDisabled = currentPage >= totalPages;
+
+  return `
+    <div class="pagination" data-pagination-type="${paginationType}">
+      <span class="pagination-info">
+        Showing ${startItem}-${endItem} of ${totalItems} ${itemLabel}
+      </span>
+      <div class="pagination-controls">
+        <div class="pagination-page-size">
+          <span class="pagination-label">Rows per page</span>
+          <select class="pagination-select" data-action="change-page-size">
+            <option value="10" ${pageSize === 10 ? 'selected' : ''}>10</option>
+            <option value="20" ${pageSize === 20 ? 'selected' : ''}>20</option>
+            <option value="50" ${pageSize === 50 ? 'selected' : ''}>50</option>
+          </select>
+        </div>
+        ${totalPages > 1 ? `
+          <div class="pagination-nav">
+            <button class="pagination-btn ${prevDisabled ? 'disabled' : ''}"
+                    data-action="prev-page"
+                    ${prevDisabled ? 'disabled' : ''}>
+              ${icons.chevronLeft}
+            </button>
+            <span class="pagination-pages">${currentPage}/${totalPages}</span>
+            <button class="pagination-btn ${nextDisabled ? 'disabled' : ''}"
+                    data-action="next-page"
+                    ${nextDisabled ? 'disabled' : ''}>
+              ${icons.chevronRight}
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Gets paginated items from an array
+ * @param {Array} items - Full array of items
+ * @param {number} page - Current page (1-indexed)
+ * @param {number} pageSize - Items per page
+ * @returns {Array} Paginated subset of items
+ */
+function getPaginatedItems(items, page, pageSize) {
+  const startIndex = (page - 1) * pageSize;
+  return items.slice(startIndex, startIndex + pageSize);
+}
+
+// ==========================================================================
 // Modal System
 // ==========================================================================
 
@@ -3868,6 +4040,172 @@ function handleCreateProject() {
 }
 
 // ==========================================================================
+// Upload Files Modal
+// ==========================================================================
+
+// Temporary storage for files pending upload
+let pendingUploadFiles = [];
+
+function showUploadFilesModal(projectSlug, taskId = null) {
+  const project = getProjectBySlug(projectSlug);
+  if (!project) return;
+
+  pendingUploadFiles = [];
+
+  const bodyHtml = `
+    <div class="upload-modal-content">
+      <div class="upload-drop-zone" id="upload-drop-zone">
+        <input type="file" id="upload-file-input" multiple hidden>
+        <div class="upload-drop-icon">
+          ${icons.upload}
+        </div>
+        <div class="upload-drop-text">
+          <span class="upload-drop-title">Drop files here or click to browse</span>
+          <span class="upload-drop-hint">PNG, JPG, PDF, DOCX, XLS • Max 10MB per file</span>
+        </div>
+      </div>
+      <div class="upload-file-list" id="upload-file-list">
+        <!-- Selected files will appear here -->
+      </div>
+    </div>
+  `;
+
+  const footerHtml = `
+    <button class="btn-secondary" data-action="close-modal">Cancel</button>
+    <button class="btn-primary" id="upload-submit-btn" data-action="submit-upload" data-project-id="${project.id}" ${taskId ? `data-task-id="${taskId}"` : ''} disabled>
+      ${icons.upload} Upload Files
+    </button>
+  `;
+
+  showModal('Upload Files', bodyHtml, footerHtml);
+  attachUploadModalListeners(project.id, taskId, projectSlug);
+}
+
+function attachUploadModalListeners(projectId, taskId, projectSlug) {
+  const dropZone = document.getElementById('upload-drop-zone');
+  const fileInput = document.getElementById('upload-file-input');
+  const fileList = document.getElementById('upload-file-list');
+  const submitBtn = document.getElementById('upload-submit-btn');
+
+  // Click to browse
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  // File input change
+  fileInput.addEventListener('change', (e) => {
+    addFilesToPendingList(e.target.files);
+    updateUploadFileList();
+  });
+
+  // Drag and drop
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    addFilesToPendingList(e.dataTransfer.files);
+    updateUploadFileList();
+  });
+
+  // Close button
+  document.querySelectorAll('[data-action="close-modal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pendingUploadFiles = [];
+      closeModal();
+    });
+  });
+
+  // Submit button
+  submitBtn.addEventListener('click', () => {
+    if (pendingUploadFiles.length > 0) {
+      handleFileUpload(pendingUploadFiles, projectId, taskId);
+      pendingUploadFiles = [];
+      closeModal();
+
+      // Re-render current view
+      if (projectSlug) {
+        renderProjectDetail(projectSlug);
+      }
+    }
+  });
+}
+
+function addFilesToPendingList(fileList) {
+  const maxSize = 10 * 1024 * 1024; // 10MB
+
+  for (const file of fileList) {
+    // Check for duplicates
+    if (pendingUploadFiles.some(f => f.name === file.name && f.size === file.size)) {
+      continue;
+    }
+
+    // Check file size
+    if (file.size > maxSize) {
+      showToast(`"${file.name}" exceeds 10MB limit`, 'error');
+      continue;
+    }
+
+    pendingUploadFiles.push(file);
+  }
+}
+
+function updateUploadFileList() {
+  const fileList = document.getElementById('upload-file-list');
+  const submitBtn = document.getElementById('upload-submit-btn');
+
+  if (pendingUploadFiles.length === 0) {
+    fileList.innerHTML = '';
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `${icons.upload} Upload Files`;
+    return;
+  }
+
+  fileList.innerHTML = pendingUploadFiles.map((file, index) => `
+    <div class="upload-file-item" data-index="${index}">
+      <div class="upload-file-icon">
+        ${getFileIcon(getFileTypeFromName(file.name))}
+      </div>
+      <div class="upload-file-info">
+        <span class="upload-file-name">${escapeHtml(file.name)}</span>
+        <span class="upload-file-size">${formatFileSize(file.size)}</span>
+      </div>
+      <button class="upload-file-remove" data-action="remove-file" data-index="${index}">
+        ${icons.x}
+      </button>
+    </div>
+  `).join('');
+
+  // Attach remove listeners
+  fileList.querySelectorAll('[data-action="remove-file"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const index = parseInt(btn.dataset.index);
+      pendingUploadFiles.splice(index, 1);
+      updateUploadFileList();
+    });
+  });
+
+  submitBtn.disabled = false;
+  const fileCount = pendingUploadFiles.length;
+  submitBtn.innerHTML = `${icons.upload} Upload ${fileCount} ${fileCount === 1 ? 'File' : 'Files'}`;
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+// ==========================================================================
 // Invite Member Modal
 // ==========================================================================
 
@@ -3931,6 +4269,100 @@ function handleInviteMember(projectSlug) {
   // In a real app, this would send an API request
   closeModal();
   showToast(`Invitation sent to ${email}`, 'success');
+}
+
+// ==========================================================================
+// Edit Member Modal
+// ==========================================================================
+
+function showEditMemberModal(memberId, projectSlug) {
+  const project = getProjectBySlug(projectSlug);
+  if (!project) return;
+
+  const members = getMembersForProject(project.id);
+  const member = members.find(m => m.id === memberId);
+  if (!member) return;
+
+  const bodyHtml = `
+    <form id="edit-member-form">
+      <div class="form-group">
+        <label class="form-label required">Name</label>
+        <input type="text" class="form-input" name="name" value="${escapeHtml(member.name)}" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label required">Email Address</label>
+        <input type="email" class="form-input" name="email" value="${escapeHtml(member.email)}" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Job Title</label>
+        <input type="text" class="form-input" name="job_title" value="${escapeHtml(member.job_title || '')}" placeholder="e.g., Project Manager">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-select" name="role">
+          <option value="member" ${member.role === 'member' ? 'selected' : ''}>Member - Can view and edit tasks</option>
+          <option value="admin" ${member.role === 'admin' ? 'selected' : ''}>Admin - Can manage project settings</option>
+          <option value="owner" ${member.role === 'owner' ? 'selected' : ''}>Owner - Full access</option>
+        </select>
+      </div>
+    </form>
+  `;
+
+  const footerHtml = `
+    <button class="btn-secondary" data-action="close-modal">Cancel</button>
+    <button class="btn-primary" data-action="submit-edit-member" data-member-id="${memberId}" data-project-slug="${projectSlug}">
+      ${icons.check} Save Changes
+    </button>
+  `;
+
+  showModal('Edit Member', bodyHtml, footerHtml);
+  attachEditMemberListeners(memberId, projectSlug);
+}
+
+function attachEditMemberListeners(memberId, projectSlug) {
+  document.querySelectorAll('[data-action="close-modal"]').forEach(btn => {
+    btn.addEventListener('click', closeModal);
+  });
+
+  document.querySelectorAll('[data-action="submit-edit-member"]').forEach(btn => {
+    btn.addEventListener('click', () => handleEditMember(memberId, projectSlug));
+  });
+}
+
+function handleEditMember(memberId, projectSlug) {
+  const form = document.getElementById('edit-member-form');
+  const formData = new FormData(form);
+
+  const name = formData.get('name')?.trim();
+  const email = formData.get('email')?.trim();
+
+  if (!name) {
+    showToast('Name is required', 'error');
+    return;
+  }
+
+  if (!email) {
+    showToast('Email address is required', 'error');
+    return;
+  }
+
+  // In a real app, this would send an API request to update the member
+  // For demo purposes, update the local data
+  const memberIndex = data.users.findIndex(u => u.id === memberId);
+  if (memberIndex !== -1) {
+    data.users[memberIndex].name = name;
+    data.users[memberIndex].email = email;
+    data.users[memberIndex].job_title = formData.get('job_title')?.trim() || '';
+    data.users[memberIndex].role = formData.get('role');
+  }
+
+  closeModal();
+  state.selectedMembers.clear();
+  showToast('Member updated successfully', 'success');
+  renderProjectDetail(projectSlug);
 }
 
 // ==========================================================================
@@ -4217,59 +4649,31 @@ function showStatusDropdown(taskId, buttonElement, projectSlug) {
 
   const statuses = getStatusesForProject(project.id);
 
-  // Remove any existing dropdown
-  closeDropdown();
-
-  // Create dropdown
-  const dropdown = document.createElement('div');
-  dropdown.className = 'dropdown-menu open';
-  dropdown.id = 'status-dropdown';
-  dropdown.innerHTML = statuses.map(status => `
-    <button class="dropdown-item ${status.id === task.status_id ? 'active' : ''}"
-            data-status-id="${status.id}">
-      <span class="dropdown-item-dot" style="background: ${status.color}"></span>
-      ${escapeHtml(status.name)}
-    </button>
-  `).join('');
-
-  // Position dropdown
-  const rect = buttonElement.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = `${rect.bottom + 4}px`;
-  dropdown.style.left = `${rect.left}px`;
-
-  document.body.appendChild(dropdown);
-  state.activeDropdown = 'status-dropdown';
-
-  // Handle status selection
-  dropdown.querySelectorAll('[data-status-id]').forEach(item => {
-    item.addEventListener('click', () => {
-      const newStatusId = item.dataset.statusId;
-      updateTaskStatus(taskId, newStatusId, projectSlug);
-    });
+  const dropdown = createDropdown({
+    id: 'status-dropdown',
+    anchor: buttonElement,
+    toggle: false,
+    content: statuses.map(status => `
+      <button class="dropdown-item ${status.id === task.status_id ? 'active' : ''}"
+              data-status-id="${status.id}">
+        <span class="dropdown-item-dot" style="background: ${status.color}"></span>
+        ${escapeHtml(status.name)}
+      </button>
+    `).join('')
   });
 
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', handleDropdownOutsideClick);
-  }, 10);
+  if (!dropdown) return;
+
+  addListeners(dropdown, '[data-status-id]', 'click', (item) => {
+    updateTaskStatus(taskId, item.dataset.statusId, projectSlug);
+  });
 }
 
 function showGroupByDropdown(buttonElement, projectSlug) {
   const project = getProjectBySlug(projectSlug);
   if (!project) return;
 
-  // If this dropdown is already open, close it and return
-  if (state.activeDropdown === 'group-by-dropdown') {
-    closeDropdown();
-    return;
-  }
-
   const currentGroupBy = state.projectGroupBy[project.id] || 'none';
-
-  // Remove any existing dropdown
-  closeDropdown();
-
   const groupByOptions = [
     { value: 'none', label: 'None' },
     { value: 'status', label: 'Status' },
@@ -4277,61 +4681,35 @@ function showGroupByDropdown(buttonElement, projectSlug) {
     { value: 'assignee', label: 'Assignee' }
   ];
 
-  // Create dropdown
-  const dropdown = document.createElement('div');
-  dropdown.className = 'dropdown-menu open';
-  dropdown.id = 'group-by-dropdown';
-  dropdown.innerHTML = groupByOptions.map(option => `
-    <button class="dropdown-item ${option.value === currentGroupBy ? 'active' : ''}"
-            data-group-by="${option.value}">
-      ${option.label}
-      ${option.value === currentGroupBy ? `<span class="dropdown-item-check">${icons.check}</span>` : ''}
-    </button>
-  `).join('');
-
-  // Position dropdown
-  const rect = buttonElement.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = `${rect.bottom + 4}px`;
-  dropdown.style.left = `${rect.left}px`;
-
-  document.body.appendChild(dropdown);
-  state.activeDropdown = 'group-by-dropdown';
-
-  // Handle selection
-  dropdown.querySelectorAll('[data-group-by]').forEach(item => {
-    item.addEventListener('click', () => {
-      const newGroupBy = item.dataset.groupBy;
-      state.projectGroupBy[project.id] = newGroupBy;
-      // Clear collapsed groups when changing grouping
-      state.collapsedGroups.clear();
-      closeDropdown();
-      renderProjectDetail(projectSlug);
-      showToast(`Grouped by ${newGroupBy}`, 'success');
-    });
+  const dropdown = createDropdown({
+    id: 'group-by-dropdown',
+    anchor: buttonElement,
+    content: groupByOptions.map(option => `
+      <button class="dropdown-item ${option.value === currentGroupBy ? 'active' : ''}"
+              data-group-by="${option.value}">
+        ${option.label}
+        ${option.value === currentGroupBy ? `<span class="dropdown-item-check">${icons.check}</span>` : ''}
+      </button>
+    `).join('')
   });
 
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', handleDropdownOutsideClick);
-  }, 10);
+  if (!dropdown) return;
+
+  addListeners(dropdown, '[data-group-by]', 'click', (item) => {
+    const newGroupBy = item.dataset.groupBy;
+    state.projectGroupBy[project.id] = newGroupBy;
+    state.collapsedGroups.clear();
+    closeDropdown();
+    renderProjectDetail(projectSlug);
+    showToast(`Grouped by ${newGroupBy}`, 'success');
+  });
 }
 
 function showSortDropdown(buttonElement, projectSlug) {
   const project = getProjectBySlug(projectSlug);
   if (!project) return;
 
-  // If this dropdown is already open, close it and return
-  if (state.activeDropdown === 'sort-dropdown') {
-    closeDropdown();
-    return;
-  }
-
   const currentSort = getProjectSort(project.id);
-
-  // Remove any existing dropdown
-  closeDropdown();
-
   const sortOptions = [
     { field: 'manual', label: 'Manual' },
     { field: 'title', label: 'Title' },
@@ -4341,141 +4719,84 @@ function showSortDropdown(buttonElement, projectSlug) {
     { field: 'updated', label: 'Updated' }
   ];
 
-  // Create dropdown
-  const dropdown = document.createElement('div');
-  dropdown.className = 'dropdown-menu open';
-  dropdown.id = 'sort-dropdown';
-  dropdown.innerHTML = sortOptions.map(option => {
-    const isActive = option.field === currentSort.field;
-    const directionIcon = isActive && option.field !== 'manual'
-      ? (currentSort.direction === 'asc' ? icons.arrowUp : icons.arrowDown)
-      : '';
-    return `
-      <button class="dropdown-item ${isActive ? 'active' : ''}"
-              data-sort-field="${option.field}">
-        ${option.label}
-        ${directionIcon ? `<span class="dropdown-item-direction">${directionIcon}</span>` : ''}
-        ${isActive ? `<span class="dropdown-item-check">${icons.check}</span>` : ''}
-      </button>
-    `;
-  }).join('');
-
-  // Position dropdown
-  const rect = buttonElement.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = `${rect.bottom + 4}px`;
-  dropdown.style.left = `${rect.left}px`;
-
-  document.body.appendChild(dropdown);
-  state.activeDropdown = 'sort-dropdown';
-
-  // Handle selection
-  dropdown.querySelectorAll('[data-sort-field]').forEach(item => {
-    item.addEventListener('click', () => {
-      const field = item.dataset.sortField;
-      const current = getProjectSort(project.id);
-
-      // If clicking the same field, toggle direction; otherwise set new field with asc
-      if (field === current.field && field !== 'manual') {
-        state.projectSort[project.id] = {
-          field,
-          direction: current.direction === 'asc' ? 'desc' : 'asc'
-        };
-      } else {
-        state.projectSort[project.id] = {
-          field,
-          direction: 'asc'
-        };
-      }
-
-      closeDropdown();
-      renderProjectDetail(projectSlug);
-
-      const sortLabels = { manual: 'Manual', title: 'Title', priority: 'Priority', dueDate: 'Due Date', created: 'Created', updated: 'Updated' };
-      showToast(`Sorted by ${sortLabels[field]}`, 'success');
-    });
+  const dropdown = createDropdown({
+    id: 'sort-dropdown',
+    anchor: buttonElement,
+    content: sortOptions.map(option => {
+      const isActive = option.field === currentSort.field;
+      const directionIcon = isActive && option.field !== 'manual'
+        ? (currentSort.direction === 'asc' ? icons.arrowUp : icons.arrowDown)
+        : '';
+      return `
+        <button class="dropdown-item ${isActive ? 'active' : ''}"
+                data-sort-field="${option.field}">
+          ${option.label}
+          ${directionIcon ? `<span class="dropdown-item-direction">${directionIcon}</span>` : ''}
+          ${isActive ? `<span class="dropdown-item-check">${icons.check}</span>` : ''}
+        </button>
+      `;
+    }).join('')
   });
 
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', handleDropdownOutsideClick);
-  }, 10);
+  if (!dropdown) return;
+
+  const sortLabels = { manual: 'Manual', title: 'Title', priority: 'Priority', dueDate: 'Due Date', created: 'Created', updated: 'Updated' };
+
+  addListeners(dropdown, '[data-sort-field]', 'click', (item) => {
+    const field = item.dataset.sortField;
+    const current = getProjectSort(project.id);
+
+    if (field === current.field && field !== 'manual') {
+      state.projectSort[project.id] = { field, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+    } else {
+      state.projectSort[project.id] = { field, direction: 'asc' };
+    }
+
+    closeDropdown();
+    renderProjectDetail(projectSlug);
+    showToast(`Sorted by ${sortLabels[field]}`, 'success');
+  });
 }
 
 function showSwimlaneDropdown(buttonElement, projectSlug) {
   const project = getProjectBySlug(projectSlug);
   if (!project) return;
 
-  // If this dropdown is already open, close it and return
-  if (state.activeDropdown === 'swimlane-dropdown') {
-    closeDropdown();
-    return;
-  }
-
   const currentSwimlane = state.boardSwimlane[project.id] || 'none';
-
-  // Remove any existing dropdown
-  closeDropdown();
-
   const swimlaneOptions = [
     { value: 'none', label: 'None' },
     { value: 'priority', label: 'Priority' },
     { value: 'assignee', label: 'Assignee' }
   ];
 
-  // Create dropdown
-  const dropdown = document.createElement('div');
-  dropdown.className = 'dropdown-menu open';
-  dropdown.id = 'swimlane-dropdown';
-  dropdown.innerHTML = swimlaneOptions.map(option => `
-    <button class="dropdown-item ${option.value === currentSwimlane ? 'active' : ''}"
-            data-swimlane="${option.value}">
-      ${option.label}
-      ${option.value === currentSwimlane ? `<span class="dropdown-item-check">${icons.check}</span>` : ''}
-    </button>
-  `).join('');
-
-  // Position dropdown
-  const rect = buttonElement.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = `${rect.bottom + 4}px`;
-  dropdown.style.left = `${rect.left}px`;
-
-  document.body.appendChild(dropdown);
-  state.activeDropdown = 'swimlane-dropdown';
-
-  // Handle selection
-  dropdown.querySelectorAll('[data-swimlane]').forEach(item => {
-    item.addEventListener('click', () => {
-      const newSwimlane = item.dataset.swimlane;
-      state.boardSwimlane[project.id] = newSwimlane;
-      closeDropdown();
-      renderProjectDetail(projectSlug);
-      showToast(`Group by ${newSwimlane === 'none' ? 'None' : newSwimlane}`, 'success');
-    });
+  const dropdown = createDropdown({
+    id: 'swimlane-dropdown',
+    anchor: buttonElement,
+    content: swimlaneOptions.map(option => `
+      <button class="dropdown-item ${option.value === currentSwimlane ? 'active' : ''}"
+              data-swimlane="${option.value}">
+        ${option.label}
+        ${option.value === currentSwimlane ? `<span class="dropdown-item-check">${icons.check}</span>` : ''}
+      </button>
+    `).join('')
   });
 
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', handleDropdownOutsideClick);
-  }, 10);
+  if (!dropdown) return;
+
+  addListeners(dropdown, '[data-swimlane]', 'click', (item) => {
+    const newSwimlane = item.dataset.swimlane;
+    state.boardSwimlane[project.id] = newSwimlane;
+    closeDropdown();
+    renderProjectDetail(projectSlug);
+    showToast(`Group by ${newSwimlane === 'none' ? 'None' : newSwimlane}`, 'success');
+  });
 }
 
 function showFieldsDropdown(buttonElement, projectSlug) {
   const project = getProjectBySlug(projectSlug);
   if (!project) return;
 
-  // If this dropdown is already open, close it and return
-  if (state.activeDropdown === 'fields-dropdown') {
-    closeDropdown();
-    return;
-  }
-
   const currentFields = getProjectFields(project.id);
-
-  // Remove any existing dropdown
-  closeDropdown();
-
   const fieldOptions = [
     { key: 'taskKey', label: 'Task Key' },
     { key: 'status', label: 'Status' },
@@ -4486,120 +4807,81 @@ function showFieldsDropdown(buttonElement, projectSlug) {
     { key: 'progress', label: 'Progress' }
   ];
 
-  // Create dropdown
-  const dropdown = document.createElement('div');
-  dropdown.className = 'dropdown-menu fields-dropdown open';
-  dropdown.id = 'fields-dropdown';
-  dropdown.innerHTML = `
-    <div class="dropdown-header">Show Fields</div>
-    ${fieldOptions.map(option => `
-      <label class="dropdown-checkbox-item">
-        <input type="checkbox" data-field="${option.key}" ${currentFields[option.key] ? 'checked' : ''}>
-        <span class="dropdown-checkbox-label">${option.label}</span>
-      </label>
-    `).join('')}
-  `;
-
-  // Position dropdown
-  const rect = buttonElement.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = `${rect.bottom + 4}px`;
-  dropdown.style.left = `${rect.left}px`;
-
-  document.body.appendChild(dropdown);
-  state.activeDropdown = 'fields-dropdown';
-
-  // Handle field toggles
-  dropdown.querySelectorAll('input[data-field]').forEach(checkbox => {
-    checkbox.addEventListener('change', (e) => {
-      const fieldKey = e.target.dataset.field;
-      const isChecked = e.target.checked;
-
-      // Initialize project fields if not exists
-      if (!state.projectFields[project.id]) {
-        state.projectFields[project.id] = getDefaultFields();
-      }
-      state.projectFields[project.id][fieldKey] = isChecked;
-
-      // Re-render to apply changes
-      renderProjectDetail(projectSlug);
-    });
+  const dropdown = createDropdown({
+    id: 'fields-dropdown',
+    anchor: buttonElement,
+    className: 'fields-dropdown',
+    content: `
+      <div class="dropdown-header">Show Fields</div>
+      ${fieldOptions.map(option => `
+        <label class="dropdown-checkbox-item">
+          <input type="checkbox" data-field="${option.key}" ${currentFields[option.key] ? 'checked' : ''}>
+          <span class="dropdown-checkbox-label">${option.label}</span>
+        </label>
+      `).join('')}
+    `
   });
 
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', handleDropdownOutsideClick);
-  }, 10);
+  if (!dropdown) return;
+
+  addListeners(dropdown, 'input[data-field]', 'change', (checkbox, e) => {
+    const fieldKey = e.target.dataset.field;
+    const isChecked = e.target.checked;
+
+    if (!state.projectFields[project.id]) {
+      state.projectFields[project.id] = getDefaultFields();
+    }
+    state.projectFields[project.id][fieldKey] = isChecked;
+    renderProjectDetail(projectSlug);
+  });
 }
 
 function showAssigneeFilterDropdown(buttonElement, projectSlug) {
   const project = getProjectBySlug(projectSlug);
   if (!project) return;
 
-  // If this dropdown is already open, close it and return
-  if (state.activeDropdown === 'assignee-filter-dropdown') {
-    closeDropdown();
-    return;
-  }
-
-  // Remove any existing dropdown
-  closeDropdown();
-
-  // Get all users who have tasks in this project (plus current assignees)
   const allTasks = state.tasks.filter(t => t.project_id === project.id);
   const assigneeIds = [...new Set(allTasks.map(t => t.assignee_id).filter(Boolean))];
   const projectMembers = assigneeIds.map(id => getUserById(id)).filter(Boolean);
-
-  // Sort members alphabetically
   projectMembers.sort((a, b) => a.name.localeCompare(b.name));
 
   const selectedAssignees = state.assigneeFilter[project.id] || [];
   const hasUnassignedTasks = allTasks.some(t => !t.assignee_id);
 
-  // Create dropdown
-  const dropdown = document.createElement('div');
-  dropdown.className = 'dropdown-menu assignee-filter-dropdown open';
-  dropdown.id = 'assignee-filter-dropdown';
-  dropdown.innerHTML = `
-    <div class="dropdown-header">Filter by Assignee</div>
-    <div class="dropdown-search">
-      <input type="text" class="dropdown-search-input" placeholder="Search members...">
-    </div>
-    <div class="dropdown-checkbox-list">
-      ${hasUnassignedTasks ? `
-        <label class="dropdown-checkbox-item" data-assignee-id="unassigned">
-          <input type="checkbox" data-assignee="unassigned" ${selectedAssignees.includes('unassigned') ? 'checked' : ''}>
-          <div class="dropdown-checkbox-avatar unassigned">
-            ${icons.x}
-          </div>
-          <span class="dropdown-checkbox-label">Unassigned</span>
-        </label>
-      ` : ''}
-      ${projectMembers.map(member => `
-        <label class="dropdown-checkbox-item" data-assignee-id="${member.id}">
-          <input type="checkbox" data-assignee="${member.id}" ${selectedAssignees.includes(member.id) ? 'checked' : ''}>
-          <div class="dropdown-checkbox-avatar" style="background: ${stringToColor(member.name)}">
-            ${getInitials(member.name)}
-          </div>
-          <span class="dropdown-checkbox-label">${escapeHtml(member.name)}</span>
-        </label>
-      `).join('')}
-    </div>
-    ${selectedAssignees.length > 0 ? `
-      <div class="dropdown-footer">
-        <button class="dropdown-clear-btn" data-action="clear-assignee-filter">Clear filter</button>
+  const dropdown = createDropdown({
+    id: 'assignee-filter-dropdown',
+    anchor: buttonElement,
+    className: 'assignee-filter-dropdown',
+    content: `
+      <div class="dropdown-header">Filter by Assignee</div>
+      <div class="dropdown-search">
+        <input type="text" class="dropdown-search-input" placeholder="Search members...">
       </div>
-    ` : ''}
-  `;
+      <div class="dropdown-checkbox-list">
+        ${hasUnassignedTasks ? `
+          <label class="dropdown-checkbox-item" data-assignee-id="unassigned">
+            <input type="checkbox" data-assignee="unassigned" ${selectedAssignees.includes('unassigned') ? 'checked' : ''}>
+            <div class="dropdown-checkbox-avatar unassigned">${icons.x}</div>
+            <span class="dropdown-checkbox-label">Unassigned</span>
+          </label>
+        ` : ''}
+        ${projectMembers.map(member => `
+          <label class="dropdown-checkbox-item" data-assignee-id="${member.id}">
+            <input type="checkbox" data-assignee="${member.id}" ${selectedAssignees.includes(member.id) ? 'checked' : ''}>
+            <div class="dropdown-checkbox-avatar" style="background: ${stringToColor(member.name)}">${getInitials(member.name)}</div>
+            <span class="dropdown-checkbox-label">${escapeHtml(member.name)}</span>
+          </label>
+        `).join('')}
+      </div>
+      ${selectedAssignees.length > 0 ? `
+        <div class="dropdown-footer">
+          <button class="dropdown-clear-btn" data-action="clear-assignee-filter">Clear filter</button>
+        </div>
+      ` : ''}
+    `
+  });
 
-  // Position dropdown
-  const rect = buttonElement.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = `${rect.bottom + 4}px`;
-  dropdown.style.left = `${rect.left}px`;
-
-  document.body.appendChild(dropdown);
-  state.activeDropdown = 'assignee-filter-dropdown';
+  if (!dropdown) return;
 
   // Handle search
   const searchInput = dropdown.querySelector('.dropdown-search-input');
@@ -4612,27 +4894,23 @@ function showAssigneeFilterDropdown(buttonElement, projectSlug) {
   });
 
   // Handle checkbox changes
-  dropdown.querySelectorAll('input[data-assignee]').forEach(checkbox => {
-    checkbox.addEventListener('change', (e) => {
-      const assigneeId = e.target.dataset.assignee;
-      const isChecked = e.target.checked;
+  addListeners(dropdown, 'input[data-assignee]', 'change', (checkbox, e) => {
+    const assigneeId = e.target.dataset.assignee;
+    const isChecked = e.target.checked;
 
-      // Initialize filter array if not exists
-      if (!state.assigneeFilter[project.id]) {
-        state.assigneeFilter[project.id] = [];
+    if (!state.assigneeFilter[project.id]) {
+      state.assigneeFilter[project.id] = [];
+    }
+
+    if (isChecked) {
+      if (!state.assigneeFilter[project.id].includes(assigneeId)) {
+        state.assigneeFilter[project.id].push(assigneeId);
       }
+    } else {
+      state.assigneeFilter[project.id] = state.assigneeFilter[project.id].filter(id => id !== assigneeId);
+    }
 
-      if (isChecked) {
-        if (!state.assigneeFilter[project.id].includes(assigneeId)) {
-          state.assigneeFilter[project.id].push(assigneeId);
-        }
-      } else {
-        state.assigneeFilter[project.id] = state.assigneeFilter[project.id].filter(id => id !== assigneeId);
-      }
-
-      // Re-render to apply changes
-      renderProjectDetail(projectSlug);
-    });
+    renderProjectDetail(projectSlug);
   });
 
   // Handle clear filter button
@@ -4645,13 +4923,7 @@ function showAssigneeFilterDropdown(buttonElement, projectSlug) {
     });
   }
 
-  // Focus search input
   searchInput.focus();
-
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', handleDropdownOutsideClick);
-  }, 10);
 }
 
 function showPriorityDropdown(taskId, buttonElement, projectSlug) {
@@ -4660,48 +4932,31 @@ function showPriorityDropdown(taskId, buttonElement, projectSlug) {
 
   const priorities = state.priorities;
 
-  // Remove any existing dropdown
-  closeDropdown();
-
-  // Create dropdown
-  const dropdown = document.createElement('div');
-  dropdown.className = 'dropdown-menu open';
-  dropdown.id = 'priority-dropdown';
-  dropdown.innerHTML = `
-    <button class="dropdown-item ${!task.priority_id ? 'active' : ''}" data-priority-id="">
-      <span class="dropdown-item-dot" style="background: #9ca3af"></span>
-      None
-    </button>
-    ${priorities.map(p => `
-      <button class="dropdown-item ${p.id === task.priority_id ? 'active' : ''}"
-              data-priority-id="${p.id}">
-        <span class="dropdown-item-dot" style="background: ${p.color}"></span>
-        ${escapeHtml(p.name)}
+  const dropdown = createDropdown({
+    id: 'priority-dropdown',
+    anchor: buttonElement,
+    toggle: false,
+    content: `
+      <button class="dropdown-item ${!task.priority_id ? 'active' : ''}" data-priority-id="">
+        <span class="dropdown-item-dot" style="background: #9ca3af"></span>
+        None
       </button>
-    `).join('')}
-  `;
-
-  // Position dropdown
-  const rect = buttonElement.getBoundingClientRect();
-  dropdown.style.position = 'fixed';
-  dropdown.style.top = `${rect.bottom + 4}px`;
-  dropdown.style.left = `${rect.left}px`;
-
-  document.body.appendChild(dropdown);
-  state.activeDropdown = 'priority-dropdown';
-
-  // Handle priority selection
-  dropdown.querySelectorAll('[data-priority-id]').forEach(item => {
-    item.addEventListener('click', () => {
-      const newPriorityId = item.dataset.priorityId || null;
-      updateTaskPriority(taskId, newPriorityId, projectSlug);
-    });
+      ${priorities.map(p => `
+        <button class="dropdown-item ${p.id === task.priority_id ? 'active' : ''}"
+                data-priority-id="${p.id}">
+          <span class="dropdown-item-dot" style="background: ${p.color}"></span>
+          ${escapeHtml(p.name)}
+        </button>
+      `).join('')}
+    `
   });
 
-  // Close on outside click
-  setTimeout(() => {
-    document.addEventListener('click', handleDropdownOutsideClick);
-  }, 10);
+  if (!dropdown) return;
+
+  addListeners(dropdown, '[data-priority-id]', 'click', (item) => {
+    const newPriorityId = item.dataset.priorityId || null;
+    updateTaskPriority(taskId, newPriorityId, projectSlug);
+  });
 }
 
 function updateTaskPriority(taskId, newPriorityId, projectSlug) {
@@ -4890,45 +5145,19 @@ function toggleTaskLabel(taskId, labelId, projectSlug) {
 }
 
 function handleDropdownOutsideClick(e) {
-  const dropdownIds = [
-    'status-dropdown',
-    'priority-dropdown',
-    'date-picker',
-    'label-picker',
-    'sort-dropdown',
-    'group-by-dropdown',
-    'swimlane-dropdown',
-    'fields-dropdown',
-    'assignee-filter-dropdown'
-  ];
+  if (!state.activeDropdown) return;
 
-  // Check if click is inside any active dropdown
-  for (const id of dropdownIds) {
-    const dropdown = document.getElementById(id);
-    if (dropdown && dropdown.contains(e.target)) {
-      return; // Click is inside dropdown, don't close
-    }
+  const dropdown = document.getElementById(state.activeDropdown);
+  if (dropdown && dropdown.contains(e.target)) {
+    return; // Click is inside dropdown, don't close
   }
 
-  // Click was outside all dropdowns, close them
   closeDropdown();
 }
 
 function closeDropdown() {
-  const dropdownIds = [
-    'status-dropdown',
-    'priority-dropdown',
-    'date-picker',
-    'label-picker',
-    'sort-dropdown',
-    'group-by-dropdown',
-    'swimlane-dropdown',
-    'fields-dropdown',
-    'assignee-filter-dropdown'
-  ];
-
-  for (const id of dropdownIds) {
-    const dropdown = document.getElementById(id);
+  if (state.activeDropdown) {
+    const dropdown = document.getElementById(state.activeDropdown);
     if (dropdown) {
       dropdown.remove();
     }

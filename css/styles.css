@@ -2385,10 +2385,11 @@ img {
   color: var(--color-text-secondary);
 }
 
-.members-actions {
+.members-actions,
+.files-actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
+  gap: var(--spacing-3);
 }
 
 .members-table th.checkbox-col {
@@ -2438,21 +2439,64 @@ img {
   border-radius: 1px;
 }
 
-.members-pagination {
+/* ==========================================================================
+   Pagination Component (Unified)
+   ========================================================================== */
+
+.pagination {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--spacing-3);
+  justify-content: space-between;
   padding: var(--spacing-3) var(--spacing-4);
   border-top: 1px solid var(--color-border-default);
   font-size: var(--font-size-sm);
+}
+
+.pagination-info {
   color: var(--color-text-muted);
 }
 
-.pagination-pages {
+.pagination-controls {
   display: flex;
   align-items: center;
-  gap: var(--spacing-1);
+  gap: var(--spacing-4);
+}
+
+.pagination-page-size {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.pagination-label {
+  color: var(--color-text-muted);
+}
+
+.pagination-select {
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  cursor: pointer;
+}
+
+.pagination-select:hover {
+  border-color: var(--color-border-hover);
+}
+
+.pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.pagination-pages {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
+  min-width: 40px;
+  text-align: center;
 }
 
 .pagination-btn {
@@ -2461,29 +2505,28 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--color-border-default);
   border-radius: var(--radius-md);
-  color: var(--color-text-muted);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-.pagination-btn:hover {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-secondary);
+.pagination-btn:hover:not(.disabled) {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
+  color: var(--color-text-primary);
 }
 
-.pagination-btn.active {
-  background: var(--color-primary-50);
-  color: var(--color-primary-600);
-  border: 1px solid var(--color-primary-200);
+.pagination-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.pagination-select {
-  padding: var(--spacing-1) var(--spacing-2);
-  border: 1px solid var(--color-gray-300);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-gray-700);
-  background: var(--color-white);
+.pagination-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ==========================================================================
@@ -3343,13 +3386,6 @@ img {
   color: var(--color-text-secondary);
 }
 
-.files-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-}
-
-
 .btn-bulk {
   display: inline-flex;
   align-items: center;
@@ -3668,56 +3704,6 @@ img {
   margin-bottom: var(--spacing-6);
 }
 
-.files-drop-zone {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-5);
-  margin: var(--spacing-4);
-  border: 2px dashed var(--color-gray-300);
-  border-radius: var(--radius-lg);
-  color: var(--color-gray-400);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  background: var(--color-gray-50);
-}
-
-.files-drop-zone:hover {
-  border-color: var(--color-primary-400);
-  background: var(--color-primary-50);
-  color: var(--color-primary-600);
-  transform: scale(1.01);
-}
-
-.files-drop-zone.dragover {
-  border-color: var(--color-primary-500);
-  background: var(--color-primary-100);
-  color: var(--color-primary-700);
-  transform: scale(1.02);
-}
-
-.files-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-3) var(--spacing-4);
-  border-top: 1px solid var(--color-border-default);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
-.files-pagination-info {
-  font-size: var(--font-size-xs);
-}
-
-.files-pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-}
-
 /* ==========================================================================
    Modal System
    ========================================================================== */
@@ -3800,6 +3786,170 @@ img {
   padding: var(--spacing-4) var(--spacing-5);
   border-top: 1px solid var(--color-border-default);
   background: var(--color-bg-subtle);
+}
+
+/* Upload Files Modal */
+.upload-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.upload-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-10);
+  border: 2px dashed var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.upload-drop-zone:hover {
+  border-color: var(--color-primary-400);
+  background: var(--color-primary-50);
+}
+
+.upload-drop-zone.dragover {
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-100);
+  transform: scale(1.01);
+}
+
+.upload-drop-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+  transition: all var(--transition-fast);
+}
+
+.upload-drop-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.upload-drop-zone:hover .upload-drop-icon {
+  background: var(--color-primary-100);
+  color: var(--color-primary-600);
+}
+
+.upload-drop-zone.dragover .upload-drop-icon {
+  background: var(--color-primary-200);
+  color: var(--color-primary-700);
+  transform: scale(1.1);
+}
+
+.upload-drop-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-1);
+  text-align: center;
+}
+
+.upload-drop-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.upload-drop-zone:hover .upload-drop-title {
+  color: var(--color-primary-700);
+}
+
+.upload-drop-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.upload-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.upload-file-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+
+.upload-file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+}
+
+.upload-file-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.upload-file-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.upload-file-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upload-file-size {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.upload-file-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.upload-file-remove:hover {
+  background: var(--color-error-100);
+  color: var(--color-error);
+}
+
+.upload-file-remove svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Delete Confirmation Modal */
