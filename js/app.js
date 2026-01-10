@@ -3357,7 +3357,7 @@ function renderRoadmapView(tasks, project) {
         <div class="gantt-timeline">
           <div class="gantt-timeline-header">
             ${months.map(month => `
-              <div class="gantt-month">
+              <div class="gantt-month" style="flex-grow: ${month.weeks.length}">
                 <div class="gantt-month-name">${month.name}</div>
                 <div class="gantt-weeks">
                   ${month.weeks.map(week => `
