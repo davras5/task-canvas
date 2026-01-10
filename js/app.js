@@ -1866,6 +1866,14 @@ function attachSettingsEventListeners(slug) {
     }, { signal });
   });
 
+  // Default view toggle
+  document.querySelectorAll('[data-default-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-default-view]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }, { signal });
+  });
+
   // Save settings button
   const saveBtn = document.getElementById('save-settings');
   if (saveBtn) {
@@ -1874,7 +1882,7 @@ function attachSettingsEventListeners(slug) {
       const description = document.getElementById('project-description')?.value?.trim();
       const identifier = document.getElementById('project-identifier')?.value?.trim().toUpperCase();
       const selectedColor = document.querySelector('.settings-color-option.active')?.dataset.color;
-      const defaultView = document.querySelector('input[name="default_view"]:checked')?.value;
+      const defaultView = document.querySelector('[data-default-view].active')?.dataset.defaultView;
 
       // Validation
       if (!name) {
@@ -2401,9 +2409,11 @@ function renderSettingsView(project) {
 
   return `
     <div class="settings-container">
-      <div class="settings-section">
-        <h3 class="settings-section-title">General</h3>
-        <div class="settings-card">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <span class="settings-card-title">General</span>
+        </div>
+        <div class="settings-card-content">
           <div class="settings-field">
             <label class="settings-label" for="project-name">Project Name</label>
             <input type="text" id="project-name" class="settings-input" value="${escapeHtml(project.name)}" data-field="name">
@@ -2414,15 +2424,15 @@ function renderSettingsView(project) {
             <textarea id="project-description" class="settings-textarea" rows="3" data-field="description">${escapeHtml(project.description || '')}</textarea>
           </div>
 
-          <div class="settings-row">
+          <div class="settings-row-3">
             <div class="settings-field">
               <label class="settings-label" for="project-identifier">Identifier</label>
-              <input type="text" id="project-identifier" class="settings-input settings-input-short" value="${escapeHtml(project.identifier)}" data-field="identifier" maxlength="5">
-              <span class="settings-hint">Used as prefix for task IDs (e.g., ${project.identifier}-1)</span>
+              <input type="text" id="project-identifier" class="settings-input" value="${escapeHtml(project.identifier)}" data-field="identifier" maxlength="5">
+              <span class="settings-hint">Prefix: ${project.identifier}-1</span>
             </div>
 
             <div class="settings-field">
-              <label class="settings-label">Project Color</label>
+              <label class="settings-label">Color</label>
               <div class="settings-color-picker">
                 ${colorOptions.map(color => `
                   <button class="settings-color-option ${project.color === color.value ? 'active' : ''}"
@@ -2434,39 +2444,42 @@ function renderSettingsView(project) {
                 `).join('')}
               </div>
             </div>
-          </div>
 
-          <div class="settings-field">
-            <label class="settings-label">Default View</label>
-            <div class="settings-radio-group">
-              <label class="settings-radio">
-                <input type="radio" name="default_view" value="list" ${project.default_view === 'list' ? 'checked' : ''}>
-                <span class="settings-radio-label">${icons.list} Task List</span>
-              </label>
-              <label class="settings-radio">
-                <input type="radio" name="default_view" value="board" ${project.default_view === 'board' ? 'checked' : ''}>
-                <span class="settings-radio-label">${icons.grid} Board</span>
-              </label>
+            <div class="settings-field">
+              <label class="settings-label">Default View</label>
+              <div class="settings-view-toggle">
+                <button class="view-toggle-btn ${project.default_view === 'list' ? 'active' : ''}" data-default-view="list">
+                  ${icons.list} List
+                </button>
+                <button class="view-toggle-btn ${project.default_view === 'board' ? 'active' : ''}" data-default-view="board">
+                  ${icons.grid} Board
+                </button>
+              </div>
             </div>
           </div>
 
           <div class="settings-actions">
-            <button class="btn-primary" id="save-settings">Save Changes</button>
+            <button class="btn-primary" id="save-settings">${icons.check} Save Changes</button>
           </div>
         </div>
       </div>
 
-      <div class="settings-section">
-        <h3 class="settings-section-title">Project Status</h3>
-        <div class="settings-card">
-          <div class="settings-status-item">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <span class="settings-card-title">Project Status</span>
+        </div>
+        <div class="settings-card-content">
+          <div class="settings-status-row">
             <div class="settings-status-info">
-              <span class="settings-status-label">${project.is_archived ? 'Archived' : 'Active'}</span>
-              <span class="settings-status-description">
-                ${project.is_archived
-                  ? 'This project is archived. It won\'t appear in the main project list.'
-                  : 'This project is active and visible to all members.'}
-              </span>
+              <span class="settings-status-indicator ${project.is_archived ? 'archived' : 'active'}"></span>
+              <div class="settings-status-text">
+                <span class="settings-status-label">${project.is_archived ? 'Archived' : 'Active'}</span>
+                <span class="settings-status-description">
+                  ${project.is_archived
+                    ? 'This project is archived and won\'t appear in the main list.'
+                    : 'This project is active and visible to all members.'}
+                </span>
+              </div>
             </div>
             <button class="btn-secondary" id="toggle-archive">
               ${project.is_archived ? 'Restore Project' : 'Archive Project'}
@@ -2475,17 +2488,21 @@ function renderSettingsView(project) {
         </div>
       </div>
 
-      <div class="settings-section settings-danger">
-        <h3 class="settings-section-title">Danger Zone</h3>
-        <div class="settings-card settings-card-danger">
-          <div class="settings-status-item">
+      <div class="settings-card settings-card-danger">
+        <div class="settings-card-header">
+          <span class="settings-card-title">Danger Zone</span>
+        </div>
+        <div class="settings-card-content">
+          <div class="settings-status-row">
             <div class="settings-status-info">
-              <span class="settings-status-label">Delete Project</span>
-              <span class="settings-status-description">
-                Permanently delete this project and all of its tasks, files, and data. This action cannot be undone.
-              </span>
+              <div class="settings-status-text">
+                <span class="settings-status-label">Delete Project</span>
+                <span class="settings-status-description">
+                  Permanently delete this project and all of its tasks, files, and data.
+                </span>
+              </div>
             </div>
-            <button class="btn-danger" id="delete-project">Delete Project</button>
+            <button class="btn-danger" id="delete-project">${icons.trash} Delete Project</button>
           </div>
         </div>
       </div>
@@ -2820,7 +2837,9 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
       <!-- Charts Row -->
       <div class="insights-charts-row">
         <div class="insights-chart-card">
-          <h3 class="insights-chart-title">Status Overview</h3>
+          <div class="insights-card-header">
+            <span class="insights-card-title">Status Overview</span>
+          </div>
           <div class="insights-chart-content">
             <div class="donut-chart">
               <svg viewBox="0 0 100 100" class="donut-svg">
@@ -2840,7 +2859,9 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
         </div>
 
         <div class="insights-chart-card">
-          <h3 class="insights-chart-title">Priority Overview</h3>
+          <div class="insights-card-header">
+            <span class="insights-card-title">Priority Overview</span>
+          </div>
           <div class="insights-chart-content">
             <div class="bar-chart">
               ${renderPriorityBars(priorityCounts, tasks.length)}
@@ -2851,8 +2872,8 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
 
       <!-- Last Updated Tasks -->
       <div class="insights-table-card">
-        <div class="insights-table-header">
-          <h3 class="insights-table-title">Last Updated Tasks</h3>
+        <div class="insights-card-header">
+          <span class="insights-card-title">Last Updated Tasks</span>
           <a href="#" class="insights-see-all">See all</a>
         </div>
         <table class="insights-table">
@@ -2975,8 +2996,8 @@ function renderInsightsMembers(memberStats, overdueTasks, projectMembers) {
 
       <!-- Members Table -->
       <div class="insights-table-card">
-        <div class="insights-table-header">
-          <h3 class="insights-table-title">Tasks by members</h3>
+        <div class="insights-card-header">
+          <span class="insights-card-title">Tasks by members</span>
         </div>
         <table class="insights-table insights-members-table">
           <thead>
@@ -3088,8 +3109,8 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
       <!-- Task Tables Row -->
       <div class="insights-tables-row">
         <div class="insights-table-card insights-table-half">
-          <div class="insights-table-header">
-            <h3 class="insights-table-title">Overdue Tasks</h3>
+          <div class="insights-card-header">
+            <span class="insights-card-title">Overdue Tasks</span>
             <a href="#" class="insights-see-all">See all</a>
           </div>
           ${overdueTasks.length > 0 ? `
@@ -3121,8 +3142,8 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
         </div>
 
         <div class="insights-table-card insights-table-half">
-          <div class="insights-table-header">
-            <h3 class="insights-table-title">Tasks completed early</h3>
+          <div class="insights-card-header">
+            <span class="insights-card-title">Tasks completed early</span>
             <a href="#" class="insights-see-all">See all</a>
           </div>
           ${tasksCompletedEarly.length > 0 ? `
@@ -3155,8 +3176,8 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
 
       <div class="insights-tables-row">
         <div class="insights-table-card insights-table-half">
-          <div class="insights-table-header">
-            <h3 class="insights-table-title">Tasks completed late</h3>
+          <div class="insights-card-header">
+            <span class="insights-card-title">Tasks completed late</span>
             <a href="#" class="insights-see-all">See all</a>
           </div>
           ${tasksCompletedLate.length > 0 ? `
