@@ -45,6 +45,31 @@ const state = {
 };
 
 // ==========================================================================
+// Event Listener Cleanup (Memory Leak Prevention)
+// ==========================================================================
+
+// AbortController for cleaning up event listeners on re-renders
+let viewAbortController = new AbortController();
+
+/**
+ * Get the current abort signal for view-level event listeners.
+ * All event listeners attached during renders should use this signal
+ * so they can be automatically cleaned up on re-render.
+ */
+function getViewSignal() {
+  return viewAbortController.signal;
+}
+
+/**
+ * Clean up all view-level event listeners before a re-render.
+ * This prevents memory leaks from accumulating event listeners.
+ */
+function cleanupViewListeners() {
+  viewAbortController.abort();
+  viewAbortController = new AbortController();
+}
+
+// ==========================================================================
 // Data Loading
 // ==========================================================================
 
@@ -220,7 +245,7 @@ function getFileTypeFromName(filename) {
 }
 
 function generateId() {
-  return 'file-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  return 'file-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
 }
 
 function handleFileUpload(fileList, projectId, taskId) {
@@ -512,6 +537,9 @@ const icons = {
 // ==========================================================================
 
 function renderProjectsLanding() {
+  // Clean up previous event listeners to prevent memory leaks
+  cleanupViewListeners();
+
   updateBreadcrumb([{ label: 'Projects', href: '#/projects' }]);
 
   const projects = getFilteredProjects();
@@ -661,12 +689,14 @@ function renderProjectsList(projects) {
 }
 
 function attachProjectsEventListeners() {
+  const signal = getViewSignal();
+
   // Filter tabs
   document.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       state.currentFilter = tab.dataset.filter;
       renderProjectsLanding();
-    });
+    }, { signal });
   });
 
   // View toggle
@@ -674,14 +704,14 @@ function attachProjectsEventListeners() {
     btn.addEventListener('click', () => {
       state.currentView = btn.dataset.view;
       renderProjectsLanding();
-    });
+    }, { signal });
   });
 
   // Create Project button
   document.querySelectorAll('[data-action="create-project"]').forEach(btn => {
     btn.addEventListener('click', () => {
       showCreateProjectModal();
-    });
+    }, { signal });
   });
 
   // Project cards/items - navigate to project detail
@@ -692,7 +722,7 @@ function attachProjectsEventListeners() {
 
       const slug = card.dataset.projectSlug;
       navigate(`#/projects/${slug}`);
-    });
+    }, { signal });
   });
 
   // Favorite buttons (prevent propagation is handled above)
@@ -706,7 +736,7 @@ function attachProjectsEventListeners() {
         project.is_favorite = !project.is_favorite;
         renderProjectsLanding();
       }
-    });
+    }, { signal });
   });
 }
 
@@ -715,6 +745,9 @@ function attachProjectsEventListeners() {
 // ==========================================================================
 
 function renderProjectDetail(slug) {
+  // Clean up previous event listeners to prevent memory leaks
+  cleanupViewListeners();
+
   const project = getProjectBySlug(slug);
 
   if (!project) {
@@ -1193,6 +1226,8 @@ function renderBoardCard(task, project) {
 }
 
 function attachProjectDetailEventListeners(slug) {
+  const signal = getViewSignal();
+
   // Tab switching
   document.querySelectorAll('.project-tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -1204,7 +1239,7 @@ function attachProjectDetailEventListeners(slug) {
       // Clear file selection when switching tabs
       state.selectedFiles.clear();
       renderProjectDetail(slug);
-    });
+    }, { signal });
   });
 
   // Sort dropdown (list view)
@@ -1212,7 +1247,7 @@ function attachProjectDetailEventListeners(slug) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       showSortDropdown(btn, slug);
-    });
+    }, { signal });
   });
 
   // Group by dropdown (list view)
@@ -1220,7 +1255,7 @@ function attachProjectDetailEventListeners(slug) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       showGroupByDropdown(btn, slug);
-    });
+    }, { signal });
   });
 
   // Swimlane dropdown (board view)
@@ -1228,7 +1263,7 @@ function attachProjectDetailEventListeners(slug) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       showSwimlaneDropdown(btn, slug);
-    });
+    }, { signal });
   });
 
   // Show archived toggle
@@ -1239,7 +1274,7 @@ function attachProjectDetailEventListeners(slug) {
         state.showArchivedTasks[project.id] = e.target.checked;
         renderProjectDetail(slug);
       }
-    });
+    }, { signal });
   });
 
   // Assigned to me toggle
@@ -1250,7 +1285,7 @@ function attachProjectDetailEventListeners(slug) {
         state.assignedToMe[project.id] = e.target.checked;
         renderProjectDetail(slug);
       }
-    });
+    }, { signal });
   });
 
   // Search toggle
@@ -1265,7 +1300,7 @@ function attachProjectDetailEventListeners(slug) {
           input.focus();
         }
       }
-    });
+    }, { signal });
   });
 
   // Search input
@@ -1288,7 +1323,7 @@ function attachProjectDetailEventListeners(slug) {
           }
         }, 200);
       }
-    });
+    }, { signal });
 
     // Handle escape key to clear and close search
     input.addEventListener('keydown', (e) => {
@@ -1303,7 +1338,7 @@ function attachProjectDetailEventListeners(slug) {
           renderProjectDetail(slug);
         }
       }
-    });
+    }, { signal });
 
     // Close search on blur if empty - only if not actively typing
     input.addEventListener('blur', (e) => {
@@ -1316,7 +1351,7 @@ function attachProjectDetailEventListeners(slug) {
           searchContainer.classList.remove('expanded');
         }
       }, 250);
-    });
+    }, { signal });
   });
 
   // Clear search
@@ -1332,7 +1367,7 @@ function attachProjectDetailEventListeners(slug) {
         }
         renderProjectDetail(slug);
       }
-    });
+    }, { signal });
   });
 
   // Fields dropdown
@@ -1340,28 +1375,28 @@ function attachProjectDetailEventListeners(slug) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       showFieldsDropdown(btn, slug);
-    });
+    }, { signal });
   });
 
   // Create Task button
   document.querySelectorAll('[data-action="create-task"]').forEach(btn => {
     btn.addEventListener('click', () => {
       showCreateTaskModal(slug);
-    });
+    }, { signal });
   });
 
   // Invite Member button
   document.querySelectorAll('[data-action="invite-member"]').forEach(btn => {
     btn.addEventListener('click', () => {
       showInviteMemberModal(slug);
-    });
+    }, { signal });
   });
 
   // Manage Workflow button
   document.querySelectorAll('.btn-manage-workflow').forEach(btn => {
     btn.addEventListener('click', () => {
       showManageWorkflowModal(slug);
-    });
+    }, { signal });
   });
 
   // Group toggle (for task list view)
@@ -1374,7 +1409,7 @@ function attachProjectDetailEventListeners(slug) {
         state.collapsedGroups.add(statusId);
       }
       renderProjectDetail(slug);
-    });
+    }, { signal });
   });
 
   // Add Task rows (inline quick add)
@@ -1386,7 +1421,7 @@ function attachProjectDetailEventListeners(slug) {
       if (groupId) {
         showQuickAddTask(groupId, groupType, slug);
       }
-    });
+    }, { signal });
   });
 
   // Board add task buttons
@@ -1398,7 +1433,7 @@ function attachProjectDetailEventListeners(slug) {
       if (groupId) {
         showQuickAddTask(groupId, groupType, slug);
       }
-    });
+    }, { signal });
   });
 
   // Board column add buttons (+)
@@ -1411,7 +1446,7 @@ function attachProjectDetailEventListeners(slug) {
       if (groupId) {
         showCreateTaskModal(slug, groupId, groupType);
       }
-    });
+    }, { signal });
   });
 
   // Task status badges - clickable to change status
@@ -1422,7 +1457,7 @@ function attachProjectDetailEventListeners(slug) {
       if (taskId) {
         showStatusDropdown(taskId, badge, slug);
       }
-    });
+    }, { signal });
   });
 
   // Task priority badges - clickable to change priority
@@ -1433,7 +1468,7 @@ function attachProjectDetailEventListeners(slug) {
       if (taskId) {
         showPriorityDropdown(taskId, badge, slug);
       }
-    });
+    }, { signal });
   });
 
   // Task due date - clickable to change date
@@ -1444,7 +1479,7 @@ function attachProjectDetailEventListeners(slug) {
       if (taskId) {
         showDueDatePicker(taskId, dateEl, slug);
       }
-    });
+    }, { signal });
   });
 
   // Task labels - clickable to manage labels
@@ -1455,7 +1490,7 @@ function attachProjectDetailEventListeners(slug) {
       if (taskId) {
         showLabelPicker(taskId, labelsEl, slug);
       }
-    });
+    }, { signal });
   });
 
   // Quick add input handlers
@@ -1471,7 +1506,7 @@ function attachProjectDetailEventListeners(slug) {
       } else if (e.key === 'Escape') {
         hideQuickAddTask(slug);
       }
-    });
+    }, { signal });
   });
 
   document.querySelectorAll('.quick-add-btn.save').forEach(btn => {
@@ -1482,13 +1517,13 @@ function attachProjectDetailEventListeners(slug) {
       if (groupId) {
         handleQuickAddTask(groupId, groupType, slug);
       }
-    });
+    }, { signal });
   });
 
   document.querySelectorAll('.quick-add-btn.cancel').forEach(btn => {
     btn.addEventListener('click', () => {
       hideQuickAddTask(slug);
-    });
+    }, { signal });
   });
 
   // Task row clicks - open detail panel
@@ -1506,7 +1541,7 @@ function attachProjectDetailEventListeners(slug) {
       if (taskId) {
         openTaskPanel(taskId, slug);
       }
-    });
+    }, { signal });
   });
 
   // Board card clicks - open detail panel
@@ -1521,7 +1556,7 @@ function attachProjectDetailEventListeners(slug) {
       if (taskId) {
         openTaskPanel(taskId, slug);
       }
-    });
+    }, { signal });
   });
 
   // Task row "+" assignee button - opens searchable dropdown
@@ -1536,7 +1571,7 @@ function attachProjectDetailEventListeners(slug) {
           showToast('Assignee updated', 'success');
         });
       }
-    });
+    }, { signal });
   });
 
   // Board card priority button - opens priority dropdown
@@ -1547,7 +1582,7 @@ function attachProjectDetailEventListeners(slug) {
       if (taskId) {
         showPriorityDropdown(taskId, btn, slug);
       }
-    });
+    }, { signal });
   });
 
   // Board card assignee button - opens searchable dropdown
@@ -1562,7 +1597,7 @@ function attachProjectDetailEventListeners(slug) {
           showToast('Assignee updated', 'success');
         });
       }
-    });
+    }, { signal });
   });
 
   // Files view event listeners
@@ -1582,6 +1617,7 @@ function attachFilesEventListeners(slug) {
   const project = getProjectBySlug(slug);
   if (!project) return;
 
+  const signal = getViewSignal();
   const files = getFilesForProject(project.id);
 
   // Select all checkbox
@@ -1595,7 +1631,7 @@ function attachFilesEventListeners(slug) {
         files.forEach(f => state.selectedFiles.add(f.id));
       }
       renderProjectDetail(slug);
-    });
+    }, { signal });
   });
 
   // Individual file checkbox
@@ -1609,25 +1645,23 @@ function attachFilesEventListeners(slug) {
         state.selectedFiles.add(fileId);
       }
       renderProjectDetail(slug);
-    });
+    }, { signal });
   });
 
   // Bulk actions
   document.querySelectorAll('[data-action="download-selected"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      console.log('Download selected files:', Array.from(state.selectedFiles));
       alert(`Downloading ${state.selectedFiles.size} files (demo only)`);
-    });
+    }, { signal });
   });
 
   document.querySelectorAll('[data-action="delete-selected"]').forEach(btn => {
     btn.addEventListener('click', () => {
       if (confirm(`Delete ${state.selectedFiles.size} selected files?`)) {
-        console.log('Delete selected files:', Array.from(state.selectedFiles));
         state.selectedFiles.clear();
         renderProjectDetail(slug);
       }
-    });
+    }, { signal });
   });
 
   // File upload - drop zone click
@@ -1637,25 +1671,25 @@ function attachFilesEventListeners(slug) {
   if (dropZone && filesInput) {
     dropZone.addEventListener('click', () => {
       filesInput.click();
-    });
+    }, { signal });
 
     filesInput.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
         handleFileUpload(e.target.files, project.id, null);
         e.target.value = ''; // Reset input
       }
-    });
+    }, { signal });
 
     // Drag and drop handlers
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
       dropZone.classList.add('dragover');
-    });
+    }, { signal });
 
     dropZone.addEventListener('dragleave', (e) => {
       e.preventDefault();
       dropZone.classList.remove('dragover');
-    });
+    }, { signal });
 
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -1663,7 +1697,7 @@ function attachFilesEventListeners(slug) {
       if (e.dataTransfer.files.length > 0) {
         handleFileUpload(e.dataTransfer.files, project.id, null);
       }
-    });
+    }, { signal });
   }
 
   // File upload - empty state button
@@ -1673,20 +1707,22 @@ function attachFilesEventListeners(slug) {
   if (uploadBtnEmpty && filesInputEmpty) {
     uploadBtnEmpty.addEventListener('click', () => {
       filesInputEmpty.click();
-    });
+    }, { signal });
 
     filesInputEmpty.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
         handleFileUpload(e.target.files, project.id, null);
         e.target.value = '';
       }
-    });
+    }, { signal });
   }
 }
 
 function attachSettingsEventListeners(slug) {
   const project = getProjectBySlug(slug);
   if (!project) return;
+
+  const signal = getViewSignal();
 
   // Color picker
   document.querySelectorAll('.settings-color-option').forEach(btn => {
@@ -1698,7 +1734,7 @@ function attachSettingsEventListeners(slug) {
       });
       btn.classList.add('active');
       btn.innerHTML = icons.check;
-    });
+    }, { signal });
   });
 
   // Save settings button
@@ -1743,7 +1779,7 @@ function attachSettingsEventListeners(slug) {
 
       showToast('Project settings saved', 'success');
       renderProjectDetail(project.slug);
-    });
+    }, { signal });
   }
 
   // Archive/Restore toggle
@@ -1759,7 +1795,7 @@ function attachSettingsEventListeners(slug) {
         showToast('Project restored', 'success');
       }
       renderProjectDetail(slug);
-    });
+    }, { signal });
   }
 
   // Delete project button
@@ -1767,7 +1803,7 @@ function attachSettingsEventListeners(slug) {
   if (deleteBtn) {
     deleteBtn.addEventListener('click', () => {
       showDeleteProjectModal(project, slug);
-    });
+    }, { signal });
   }
 }
 
@@ -1869,13 +1905,15 @@ function attachInsightsEventListeners(slug) {
   const project = getProjectBySlug(slug);
   if (!project) return;
 
+  const signal = getViewSignal();
+
   // Insights tab switching
   document.querySelectorAll('.insights-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       const tabName = tab.dataset.insightsTab;
       state.currentInsightsTab = tabName;
       renderProjectDetail(slug);
-    });
+    }, { signal });
   });
 
   // Export button
@@ -1883,7 +1921,7 @@ function attachInsightsEventListeners(slug) {
   if (exportBtn) {
     exportBtn.addEventListener('click', () => {
       exportInsightsData(project);
-    });
+    }, { signal });
   }
 }
 
@@ -3275,7 +3313,7 @@ function formatDateTime(dateStr) {
 }
 
 function generateId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 }
 
 // ==========================================================================
