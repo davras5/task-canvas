@@ -2725,12 +2725,11 @@ img {
 
 .gantt-cell {
   flex: 1;
-  border-right: 1px solid var(--color-border-muted);
   position: relative;
 }
 
-.gantt-cell:last-child {
-  border-right: none;
+.gantt-cell.month-start {
+  border-left: 1px solid var(--color-border-muted);
 }
 
 .gantt-cell.weekend {
