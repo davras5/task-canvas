@@ -728,7 +728,7 @@ function renderProjectsList(projects) {
             <div class="project-list-color" style="--project-color: ${project.color}"></div>
             <div class="project-list-info">
               <div class="project-list-name">${escapeHtml(project.name)}</div>
-              <div class="project-list-identifier">${escapeHtml(project.identifier)}</div>
+              <div class="project-identifier">${escapeHtml(project.identifier)}</div>
             </div>
             <div class="project-list-progress">
               <div class="progress-label">
@@ -1182,10 +1182,10 @@ function renderBoardColumn(status, tasks, project, swimlane) {
           <span class="board-column-count">${tasks.length}</span>
         </div>
         <div class="board-column-actions">
-          <button class="board-column-btn" title="Add task">
+          <button class="icon-btn board-column-btn" title="Add task">
             ${icons.plus}
           </button>
-          <button class="board-column-btn" title="More options">
+          <button class="icon-btn board-column-btn" title="More options">
             ${icons.moreHorizontal}
           </button>
         </div>
@@ -1289,9 +1289,9 @@ function renderBoardCard(task, project) {
   return `
     <div class="card card--board board-card ${isArchived ? 'archived' : ''}" data-task-id="${task.id}" draggable="true">
       <div class="board-card-header">
-        ${fields.taskKey ? `<span class="board-card-key">${escapeHtml(taskKey)}</span>` : ''}
+        ${fields.taskKey ? `<span class="task-key">${escapeHtml(taskKey)}</span>` : ''}
         ${fields.labels && firstLabel ? `
-          <span class="board-card-label" style="background: ${hexToRgba(firstLabel.color, 0.15)}; color: ${firstLabel.color}">
+          <span class="task-label" style="background: ${hexToRgba(firstLabel.color, 0.15)}; color: ${firstLabel.color}">
             ${escapeHtml(firstLabel.name)}
           </span>
         ` : ''}
@@ -1314,11 +1314,11 @@ function renderBoardCard(task, project) {
             ` : ''}
             ${fields.assignee ? `
               ${assignee
-                ? `<div class="board-card-assignee" style="background: ${stringToColor(assignee.name)}" title="${escapeHtml(assignee.name)}">
+                ? `<div class="table-avatar board-card-assignee" style="background: ${stringToColor(assignee.name)}" title="${escapeHtml(assignee.name)}">
                     ${getInitials(assignee.name)}
                   </div>`
                 : ''}
-              <button class="board-card-add-btn" title="Assign">+</button>
+              <button class="add-icon-btn" title="Assign">+</button>
             ` : ''}
           </div>
         </div>
@@ -1645,7 +1645,7 @@ function attachProjectDetailEventListeners(slug) {
           e.target.closest('.task-priority') ||
           e.target.closest('.task-due-date') ||
           e.target.closest('.task-labels') ||
-          e.target.closest('.task-add-assignee')) {
+          e.target.closest('.add-icon-btn')) {
         return;
       }
       const taskId = row.dataset.taskId;
@@ -1659,7 +1659,7 @@ function attachProjectDetailEventListeners(slug) {
   document.querySelectorAll('.board-card').forEach(card => {
     card.addEventListener('click', (e) => {
       // Don't open panel if clicking on interactive elements
-      if (e.target.closest('.board-card-add-btn') ||
+      if (e.target.closest('.add-icon-btn') ||
           e.target.closest('.board-card-priority-btn')) {
         return;
       }
@@ -1671,7 +1671,7 @@ function attachProjectDetailEventListeners(slug) {
   });
 
   // Task row "+" assignee button - opens searchable dropdown
-  document.querySelectorAll('.task-add-assignee').forEach(btn => {
+  document.querySelectorAll('.task-row .add-icon-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const taskId = btn.closest('.task-row')?.dataset.taskId;
@@ -1697,7 +1697,7 @@ function attachProjectDetailEventListeners(slug) {
   });
 
   // Board card assignee button - opens searchable dropdown
-  document.querySelectorAll('.board-card-add-btn[title="Assign"]').forEach(btn => {
+  document.querySelectorAll('.board-card .add-icon-btn[title="Assign"]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const taskId = btn.closest('.board-card')?.dataset.taskId;
@@ -2467,7 +2467,7 @@ function renderTaskRow(task, project, group, groupBy) {
             ? `<div class="task-assignee" style="background: ${stringToColor(assignee.name)}" title="${escapeHtml(assignee.name)}">
                 ${getInitials(assignee.name)}
               </div>`
-            : `<button class="task-add-assignee" title="Add assignee">+</button>`
+            : `<button class="add-icon-btn" title="Add assignee">+</button>`
           }
         </div>
       ` : ''}
@@ -2548,7 +2548,7 @@ function renderMembersView(tasks, project) {
         <thead>
           <tr>
             <th class="checkbox-col">
-              <div class="member-checkbox ${getMemberSelectAllState(members)}" data-action="select-all-members">
+              <div class="table-checkbox ${getMemberSelectAllState(members)}" data-action="select-all-members">
                 ${selectedCount > 0 && selectedCount === members.length ? icons.check : ''}
               </div>
             </th>
@@ -2587,7 +2587,7 @@ function renderMemberRow(member) {
   return `
     <tr class="${isSelected ? 'selected' : ''}" data-member-id="${member.id}">
       <td>
-        <div class="member-checkbox ${isSelected ? 'checked' : ''}" data-action="toggle-member" data-member-id="${member.id}">
+        <div class="table-checkbox ${isSelected ? 'checked' : ''}" data-action="toggle-member" data-member-id="${member.id}">
           ${isSelected ? icons.check : ''}
         </div>
       </td>
@@ -2604,8 +2604,8 @@ function renderMemberRow(member) {
       <td><span class="member-tasks">${member.doneCount}/${member.taskCount}</span></td>
       <td>
         <div class="member-progress">
-          <div class="member-progress-bar">
-            <div class="member-progress-fill" style="width: ${member.progress}%"></div>
+          <div class="progress-bar member-progress-bar">
+            <div class="progress-fill member-progress-fill" style="width: ${member.progress}%"></div>
           </div>
           <span class="member-progress-text">${member.progress}%</span>
         </div>
@@ -2771,7 +2771,7 @@ function renderFilesView(project) {
         <thead>
           <tr>
             <th class="checkbox-col">
-              <div class="file-checkbox ${getSelectAllState(files)}" data-action="select-all">
+              <div class="table-checkbox ${getSelectAllState(files)}" data-action="select-all">
                 ${selectedCount > 0 && selectedCount === files.length ? icons.check : ''}
               </div>
             </th>
@@ -2812,7 +2812,7 @@ function renderFileRow(file, project) {
   return `
     <tr class="${isSelected ? 'selected' : ''}" data-file-id="${file.id}">
       <td>
-        <div class="file-checkbox ${isSelected ? 'checked' : ''}" data-action="toggle-file" data-file-id="${file.id}">
+        <div class="table-checkbox ${isSelected ? 'checked' : ''}" data-action="toggle-file" data-file-id="${file.id}">
           ${isSelected ? icons.check : ''}
         </div>
       </td>
@@ -3260,8 +3260,8 @@ function renderInsightsMembers(memberStats, overdueTasks, projectMembers) {
                   <td class="text-center text-danger">${m.overdue}</td>
                   <td>
                     <div class="insights-progress-cell">
-                      <div class="insights-progress-bar">
-                        <div class="insights-progress-fill" style="width: ${progress}%"></div>
+                      <div class="progress-bar insights-progress-bar">
+                        <div class="progress-fill insights-progress-fill" style="width: ${progress}%"></div>
                       </div>
                       <span class="insights-progress-text">${progress}%</span>
                     </div>
@@ -3507,7 +3507,7 @@ function renderRoadmapView(tasks, project) {
                   <div class="gantt-task-color" style="background: ${status?.color || FALLBACK_COLOR}"></div>
                   <span class="gantt-task-name">${escapeHtml(task.title)}</span>
                   ${assignee ? `
-                    <div class="gantt-task-assignee" style="background: ${stringToColor(assignee.name)}">
+                    <div class="table-avatar" style="background: ${stringToColor(assignee.name)}">
                       ${getInitials(assignee.name)}
                     </div>
                   ` : ''}
@@ -5831,8 +5831,8 @@ function renderFilePreviewPanel(file, projectSlug) {
 
     <div class="file-preview-body">
       <!-- Preview Section -->
-      <div class="file-preview-section">
-        <div class="file-preview-section-header">Preview</div>
+      <div class="panel-section">
+        <div class="panel-section-header">Preview</div>
         <div class="file-preview-content">
           ${placeholderIcon}
           <div class="file-preview-placeholder-text">Preview not available</div>
@@ -5841,8 +5841,8 @@ function renderFilePreviewPanel(file, projectSlug) {
       </div>
 
       <!-- Details Section -->
-      <div class="file-preview-section">
-        <div class="file-preview-section-header">Details</div>
+      <div class="panel-section">
+        <div class="panel-section-header">Details</div>
         <div class="file-preview-details-grid">
           <span class="file-preview-details-label">Name</span>
           <span class="file-preview-details-value">${escapeHtml(file.name)}</span>
@@ -5966,7 +5966,7 @@ function renderTaskPanel(task, projectSlug) {
              placeholder="Task title...">
 
       <div class="task-panel-meta">
-        <div class="task-panel-section-header">Details</div>
+        <div class="panel-section-header">Details</div>
         <!-- Status -->
         <div class="task-panel-field">
           <span class="task-panel-field-label">Status</span>
@@ -6060,8 +6060,8 @@ function renderTaskPanel(task, projectSlug) {
       </div>
 
       <!-- Attachments Section -->
-      <div class="task-panel-section">
-        <div class="task-panel-section-header">
+      <div class="panel-section task-panel-section">
+        <div class="panel-section-header">
           Attachments
           <span class="task-panel-section-count">${taskFiles.length}</span>
         </div>
@@ -6092,8 +6092,8 @@ function renderTaskPanel(task, projectSlug) {
       </div>
 
       <!-- Activity Section -->
-      <div class="task-panel-section">
-        <div class="task-panel-section-header">
+      <div class="panel-section task-panel-section">
+        <div class="panel-section-header">
           Activity
         </div>
         <div class="task-panel-activity">
@@ -6123,8 +6123,8 @@ function renderTaskPanel(task, projectSlug) {
       </div>
 
       <!-- Comments Section -->
-      <div class="task-panel-section">
-        <div class="task-panel-section-header">
+      <div class="panel-section task-panel-section">
+        <div class="panel-section-header">
           Comments
           <span class="task-panel-section-count">0</span>
         </div>
