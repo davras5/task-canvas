@@ -2,6 +2,11 @@
 
 A modern, feature-rich project management application built with vanilla JavaScript. No frameworks, no build steps - just open and run.
 
+<p align="center">
+  <img src="assets/Preview1.jpg" width="45%" style="vertical-align: top;"/>
+  <img src="assets/Preview2.jpg" width="45%" style="vertical-align: top;"/>
+</p>
+
 ## Features
 
 ### Multiple Views
