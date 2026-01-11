@@ -118,7 +118,7 @@ img {
   background: var(--color-bg-primary);
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
 }
 
 /* Card size modifiers */
@@ -666,26 +666,16 @@ img {
   background: var(--color-primary-500);
   color: var(--color-text-inverse);
   border: none;
-  box-shadow: var(--shadow-primary-xs);
 }
 
 .btn-primary:hover {
   background: var(--color-primary-600);
-  box-shadow: var(--shadow-primary);
-  transform: translateY(-1px);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
-  box-shadow: var(--shadow-primary-xs);
 }
 
 .btn-primary:disabled {
   background: var(--color-gray-300);
   color: var(--color-text-disabled);
-  box-shadow: none;
   cursor: not-allowed;
-  transform: none;
 }
 
 /* Secondary button */
@@ -1256,7 +1246,8 @@ img {
   color: var(--color-text-primary);
 }
 
-.task-group-count {
+/* Count badge - used for group/column counts */
+.count-badge {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
   background: var(--color-bg-tertiary);
@@ -3166,6 +3157,15 @@ img {
   color: var(--color-error);
 }
 
+/* Uppercase label - used for section headers, dropdown headers */
+.label-uppercase {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+}
+
 /* Insights empty state - extends base empty-state pattern */
 .insights-empty-state {
   display: flex;
@@ -3306,29 +3306,41 @@ img {
   flex-wrap: wrap;
 }
 
-.settings-color-option {
+/* Base color swatch - used in settings, dropdown, workflow */
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.color-swatch.selected,
+.color-swatch.active {
+  border-color: var(--color-gray-900);
+  box-shadow: 0 0 0 2px var(--color-white);
+}
+
+.color-swatch--lg {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-md);
-  border: 2px solid transparent;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-white);
-  transition: all var(--transition-fast);
 }
 
-.settings-color-option:hover {
-  transform: scale(1.1);
-}
-
-.settings-color-option.active {
-  border-color: var(--color-gray-900);
+.color-swatch--lg.active {
   box-shadow: 0 0 0 2px var(--color-white), 0 0 0 4px var(--color-gray-400);
 }
 
-.settings-color-option svg {
+.color-swatch--lg svg {
   width: 16px;
   height: 16px;
 }
@@ -4060,24 +4072,6 @@ img {
   flex-wrap: wrap;
 }
 
-.color-option {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  border: 2px solid transparent;
-}
-
-.color-option:hover {
-  transform: scale(1.1);
-}
-
-.color-option.selected {
-  border-color: var(--color-gray-900);
-  box-shadow: 0 0 0 2px var(--color-white);
-}
-
 /* Dropdown Menu */
 .dropdown {
   position: relative;
@@ -4184,11 +4178,6 @@ img {
 
 .dropdown-header {
   padding: var(--spacing-2) var(--spacing-3);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-500);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wider);
 }
 
 /* Fields Dropdown */
@@ -4369,13 +4358,6 @@ img {
   border-bottom: 1px solid var(--color-gray-200);
 }
 
-.label-picker-title {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-500);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wider);
-}
 
 .label-picker-list {
   padding: var(--spacing-2);
@@ -4884,11 +4866,6 @@ img {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-500);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wider);
   margin-bottom: var(--spacing-3);
   padding-bottom: var(--spacing-2);
 }
@@ -5685,11 +5662,6 @@ img {
 
 .searchable-dropdown-section {
   padding: var(--spacing-2) var(--spacing-3);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-500);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wider);
 }
 
 .searchable-dropdown-divider {
@@ -5832,11 +5804,6 @@ img {
 }
 
 .workflow-section-label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-500);
-  text-transform: uppercase;
-  letter-spacing: var(--letter-spacing-wider);
   margin-bottom: var(--spacing-2);
 }
 
@@ -5853,19 +5820,12 @@ img {
   z-index: 400;
 }
 
-.workflow-color-option {
+.color-swatch--sm {
   width: 24px;
   height: 24px;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: transform var(--transition-fast);
 }
 
-.workflow-color-option:hover {
-  transform: scale(1.2);
-}
-
-.workflow-color-option.selected {
+.color-swatch--sm.selected {
   box-shadow: 0 0 0 2px var(--color-white), 0 0 0 4px currentColor;
 }
 

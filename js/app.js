@@ -1915,10 +1915,10 @@ function attachSettingsEventListeners(slug) {
   const signal = getViewSignal();
 
   // Color picker
-  document.querySelectorAll('.settings-color-option').forEach(btn => {
+  document.querySelectorAll('.color-swatch--lg').forEach(btn => {
     btn.addEventListener('click', () => {
       // Update visual selection
-      document.querySelectorAll('.settings-color-option').forEach(b => {
+      document.querySelectorAll('.color-swatch--lg').forEach(b => {
         b.classList.remove('active');
         b.innerHTML = '';
       });
@@ -1942,7 +1942,7 @@ function attachSettingsEventListeners(slug) {
       const name = document.getElementById('project-name')?.value?.trim();
       const description = document.getElementById('project-description')?.value?.trim();
       const identifier = document.getElementById('project-identifier')?.value?.trim().toUpperCase();
-      const selectedColor = document.querySelector('.settings-color-option.active')?.dataset.color;
+      const selectedColor = document.querySelector('.color-swatch--lg.active')?.dataset.color;
       const defaultView = document.querySelector('[data-default-view].active')?.dataset.defaultView;
 
       // Validation
@@ -2660,7 +2660,7 @@ function renderSettingsView(project) {
               <label class="settings-label">Color</label>
               <div class="settings-color-picker">
                 ${colorOptions.map(color => `
-                  <button class="settings-color-option ${project.color === color.value ? 'active' : ''}"
+                  <button class="color-swatch color-swatch--lg ${project.color === color.value ? 'active' : ''}"
                           style="background: ${color.value}"
                           data-color="${color.value}"
                           title="${color.name}">
@@ -4308,7 +4308,7 @@ function showCreateProjectModal() {
         <label class="form-label">Color</label>
         <div class="color-picker">
           ${projectColors.map((color, i) => `
-            <div class="color-option ${i === 0 ? 'selected' : ''}"
+            <div class="color-swatch ${i === 0 ? 'selected' : ''}"
                  style="background: ${color}"
                  data-color="${color}"></div>
           `).join('')}
@@ -4335,9 +4335,9 @@ function attachCreateProjectListeners() {
   });
 
   // Color picker
-  document.querySelectorAll('.color-option').forEach(option => {
+  document.querySelectorAll('.color-swatch').forEach(option => {
     option.addEventListener('click', () => {
-      document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+      document.querySelectorAll('.color-swatch').forEach(o => o.classList.remove('selected'));
       option.classList.add('selected');
     });
   });
@@ -4388,7 +4388,7 @@ function handleCreateProject() {
     return;
   }
 
-  const selectedColor = document.querySelector('.color-option.selected');
+  const selectedColor = document.querySelector('.color-swatch.selected');
   const color = selectedColor?.dataset.color || projectColors[0];
 
   // Generate slug from name
@@ -4972,7 +4972,7 @@ function showWorkflowColorPicker(targetElement, statusId, projectSlug) {
   picker.id = 'workflow-color-picker';
   picker.className = 'workflow-color-picker';
   picker.innerHTML = workflowColors.map(color => `
-    <div class="workflow-color-option ${color === status.color ? 'selected' : ''}"
+    <div class="color-swatch color-swatch--sm ${color === status.color ? 'selected' : ''}"
          style="background: ${color}"
          data-color="${color}"></div>
   `).join('');
@@ -4985,7 +4985,7 @@ function showWorkflowColorPicker(targetElement, statusId, projectSlug) {
   document.body.appendChild(picker);
 
   // Handle color selection
-  picker.querySelectorAll('.workflow-color-option').forEach(option => {
+  picker.querySelectorAll('.color-swatch--sm').forEach(option => {
     option.addEventListener('click', () => {
       const newColor = option.dataset.color;
       status.color = newColor;
@@ -5201,7 +5201,7 @@ function showFieldsDropdown(buttonElement, projectSlug) {
     anchor: buttonElement,
     className: 'fields-dropdown',
     content: `
-      <div class="dropdown-header">Show Fields</div>
+      <div class="dropdown-header label-uppercase">Show Fields</div>
       ${fieldOptions.map(option => `
         <label class="dropdown-checkbox-item">
           <input type="checkbox" data-field="${option.key}" ${currentFields[option.key] ? 'checked' : ''}>
@@ -5242,7 +5242,7 @@ function showAssigneeFilterDropdown(buttonElement, projectSlug) {
     anchor: buttonElement,
     className: 'assignee-filter-dropdown',
     content: `
-      <div class="dropdown-header">Filter by Assignee</div>
+      <div class="dropdown-header label-uppercase">Filter by Assignee</div>
       <div class="dropdown-search">
         <input type="text" class="dropdown-search-input" placeholder="Search members...">
       </div>
@@ -5470,7 +5470,7 @@ function showLabelPicker(taskId, buttonElement, projectSlug) {
   picker.id = 'label-picker';
   picker.innerHTML = `
     <div class="label-picker-header">
-      <span class="label-picker-title">Labels</span>
+      <span class="label-uppercase">Labels</span>
     </div>
     <div class="label-picker-list">
       ${labels.map(label => `
@@ -5832,7 +5832,7 @@ function renderFilePreviewPanel(file, projectSlug) {
     <div class="file-preview-body">
       <!-- Preview Section -->
       <div class="panel-section">
-        <div class="panel-section-header">Preview</div>
+        <div class="panel-section-header label-uppercase">Preview</div>
         <div class="file-preview-content">
           ${placeholderIcon}
           <div class="file-preview-placeholder-text">Preview not available</div>
@@ -5842,7 +5842,7 @@ function renderFilePreviewPanel(file, projectSlug) {
 
       <!-- Details Section -->
       <div class="panel-section">
-        <div class="panel-section-header">Details</div>
+        <div class="panel-section-header label-uppercase">Details</div>
         <div class="file-preview-details-grid">
           <span class="file-preview-details-label">Name</span>
           <span class="file-preview-details-value">${escapeHtml(file.name)}</span>
@@ -5966,7 +5966,7 @@ function renderTaskPanel(task, projectSlug) {
              placeholder="Task title...">
 
       <div class="task-panel-meta">
-        <div class="panel-section-header">Details</div>
+        <div class="panel-section-header label-uppercase">Details</div>
         <!-- Status -->
         <div class="task-panel-field">
           <span class="task-panel-field-label">Status</span>
@@ -6061,7 +6061,7 @@ function renderTaskPanel(task, projectSlug) {
 
       <!-- Attachments Section -->
       <div class="panel-section task-panel-section">
-        <div class="panel-section-header">
+        <div class="panel-section-header label-uppercase">
           Attachments
           <span class="task-panel-section-count">${taskFiles.length}</span>
         </div>
@@ -6093,7 +6093,7 @@ function renderTaskPanel(task, projectSlug) {
 
       <!-- Activity Section -->
       <div class="panel-section task-panel-section">
-        <div class="panel-section-header">
+        <div class="panel-section-header label-uppercase">
           Activity
         </div>
         <div class="task-panel-activity">
@@ -6124,7 +6124,7 @@ function renderTaskPanel(task, projectSlug) {
 
       <!-- Comments Section -->
       <div class="panel-section task-panel-section">
-        <div class="panel-section-header">
+        <div class="panel-section-header label-uppercase">
           Comments
           <span class="task-panel-section-count">0</span>
         </div>
