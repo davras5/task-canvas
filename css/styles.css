@@ -110,6 +110,79 @@ img {
 }
 
 /* ==========================================================================
+   Cards (BEM)
+   ========================================================================== */
+
+/* Base card - shared styles for all card components */
+.card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Card size modifiers */
+.card--radius-lg {
+  border-radius: var(--radius-lg);
+}
+
+/* Card type modifiers */
+.card--project {
+  padding: var(--spacing-5);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.card--task-group {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.card--board {
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-4);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.card--kpi {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+}
+
+.card--settings {
+  overflow: hidden;
+}
+
+.card--insights {
+  overflow: hidden;
+}
+
+/* Card elements */
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4) var(--spacing-5);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-bg-subtle);
+}
+
+.card__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.card__content {
+  padding: var(--spacing-5);
+}
+
+/* ==========================================================================
    Header
    ========================================================================== */
 
@@ -331,13 +404,13 @@ img {
 .avatar--xs {
   width: var(--size-avatar-xs);
   height: var(--size-avatar-xs);
-  font-size: 9px;
+  font-size: var(--font-size-2xs);
 }
 
 .avatar--sm {
   width: var(--size-avatar-sm);
   height: var(--size-avatar-sm);
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
 }
 
 .avatar--md {
@@ -430,7 +503,7 @@ img {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
-  letter-spacing: -0.025em;
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 .page-title-count {
@@ -691,16 +764,7 @@ img {
   gap: var(--spacing-5);
 }
 
-.project-card {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-5);
-  transition: all var(--transition-normal);
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
+/* .project-card - base styles now in .card and .card--project */
 
 .project-card::before {
   content: '';
@@ -745,7 +809,7 @@ img {
   background: var(--color-gray-100);
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-sm);
-  letter-spacing: 0.02em;
+  letter-spacing: var(--letter-spacing-wide);
 }
 
 .project-favorite {
@@ -767,9 +831,10 @@ img {
   justify-content: space-between;
   margin-bottom: var(--spacing-2);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
 }
 
 .progress-bar {
@@ -861,7 +926,7 @@ img {
   background: var(--color-gray-100);
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-sm);
-  letter-spacing: 0.02em;
+  letter-spacing: var(--letter-spacing-wide);
 }
 
 .project-list-progress {
@@ -1174,12 +1239,7 @@ img {
   gap: var(--spacing-6);
 }
 
-.task-group {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
+/* .task-group - base styles now in .card and .card--task-group */
 
 .task-group-header {
   display: flex;
@@ -1190,10 +1250,6 @@ img {
   background: var(--color-bg-subtle);
   cursor: pointer;
   user-select: none;
-}
-
-.task-group-header:hover {
-  background: var(--color-bg-secondary);
 }
 
 .task-group-toggle {
@@ -1228,10 +1284,6 @@ img {
 /* Flat list (no grouping) styles */
 .task-group-header.flat {
   cursor: default;
-}
-
-.task-group-header.flat:hover {
-  background: transparent;
 }
 
 .task-list {
@@ -1310,7 +1362,7 @@ img {
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  letter-spacing: 0.01em;
+  letter-spacing: var(--letter-spacing-wide);
   white-space: nowrap;
   flex-shrink: 0;
   min-width: 90px;
@@ -2056,14 +2108,7 @@ img {
   padding-left: var(--spacing-3);
 }
 
-.board-card {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-4);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
+/* .board-card - base styles now in .card and .card--board */
 
 .board-card:hover {
   border-color: var(--color-gray-300);
@@ -2155,7 +2200,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
 }
 
@@ -2308,7 +2353,7 @@ img {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
   background: var(--color-bg-secondary);
   border-bottom: 1px solid var(--color-border-default);
 }
@@ -2349,18 +2394,22 @@ img {
   gap: var(--spacing-3);
 }
 
-.member-avatar {
-  width: 36px;
-  height: 36px;
+/* Base table avatar - used in members and files tables */
+.table-avatar {
+  width: var(--size-avatar-sm);
+  height: var(--size-avatar-sm);
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
   color: var(--color-white);
   flex-shrink: 0;
-  box-shadow: 0 2px 4px var(--color-overlay-subtle);
+}
+
+.member-avatar {
+  /* Extends .table-avatar */
 }
 
 .member-name {
@@ -2369,7 +2418,7 @@ img {
 }
 
 .member-email {
-  color: var(--color-primary-600);
+  /* Inherits from .members-table td */
 }
 
 .member-tasks {
@@ -2661,7 +2710,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-white);
   flex-shrink: 0;
@@ -2695,7 +2744,7 @@ img {
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2829,7 +2878,7 @@ img {
   padding: 2px 6px;
   background: var(--color-error);
   color: var(--color-white);
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   border-radius: var(--radius-sm);
   white-space: nowrap;
@@ -2869,15 +2918,7 @@ img {
   gap: var(--spacing-6);
 }
 
-.insights-kpi-card {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-4);
-  padding: var(--spacing-5);
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xl);
-}
+/* .insights-kpi-card - base styles now in .card and .card--kpi */
 
 .insights-kpi-icon {
   width: 48px;
@@ -2937,13 +2978,7 @@ img {
   gap: var(--spacing-6);
 }
 
-.insights-chart-card,
-.insights-table-card {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-}
+/* .insights-chart-card, .insights-table-card - base styles now in .card and .card--insights */
 
 .insights-card-header {
   display: flex;
@@ -3007,6 +3042,7 @@ img {
 .bar-chart {
   width: 100%;
   height: 200px;
+  padding: var(--spacing-4);
 }
 
 .bar-chart-container {
@@ -3260,12 +3296,7 @@ img {
   }
 }
 
-.settings-card {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-}
+/* .settings-card - base styles now in .card and .card--settings */
 
 .settings-card-header {
   display: flex;
@@ -3609,8 +3640,8 @@ img {
 }
 
 .file-icon {
-  width: 36px;
-  height: 36px;
+  width: var(--size-avatar-sm);
+  height: var(--size-avatar-sm);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -3692,8 +3723,7 @@ img {
 }
 
 .file-size {
-  color: var(--color-gray-500);
-  font-size: var(--font-size-xs);
+  /* Inherits from .files-table td */
 }
 
 .file-uploader {
@@ -3703,24 +3733,15 @@ img {
 }
 
 .file-uploader-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-white);
+  /* Extends .table-avatar */
 }
 
 .file-uploader-name {
-  color: var(--color-gray-700);
+  /* Inherits from .files-table td */
 }
 
 .file-date {
-  color: var(--color-gray-500);
-  font-size: var(--font-size-xs);
+  /* Inherits from .files-table td */
 }
 
 .file-actions {
@@ -4308,10 +4329,10 @@ img {
 .dropdown-header {
   padding: var(--spacing-2) var(--spacing-3);
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-gray-500);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
 }
 
 /* Fields Dropdown */
@@ -4497,7 +4518,7 @@ img {
   font-weight: var(--font-weight-semibold);
   color: var(--color-gray-500);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
 }
 
 .label-picker-list {
@@ -4814,6 +4835,14 @@ img {
   gap: var(--spacing-3);
 }
 
+.task-panel-field--description {
+  align-items: start;
+}
+
+.task-panel-field--description .task-panel-field-label {
+  padding-top: var(--spacing-2);
+}
+
 .task-panel-field-label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -4980,6 +5009,13 @@ img {
 
 .task-panel-section {
   margin-bottom: var(--spacing-6);
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border-default);
+}
+
+.task-panel-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
 }
 
 .task-panel-section-header {
@@ -4990,8 +5026,9 @@ img {
   font-weight: var(--font-weight-semibold);
   color: var(--color-gray-500);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
   margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
 }
 
 .task-panel-description {
@@ -5002,8 +5039,8 @@ img {
 
 .task-panel-description-input {
   width: 100%;
-  min-height: 100px;
-  padding: var(--spacing-3);
+  min-height: 72px;
+  padding: var(--spacing-2) var(--spacing-3);
   font-size: var(--font-size-sm);
   color: var(--color-gray-900);
   line-height: var(--line-height-normal);
@@ -5555,6 +5592,31 @@ img {
   color: var(--color-text-muted);
 }
 
+.file-preview-section {
+  padding-top: var(--spacing-5);
+  border-top: 1px solid var(--color-border-default);
+  margin-top: var(--spacing-5);
+}
+
+.file-preview-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.file-preview-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wider);
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+}
+
 .file-preview-details {
   margin-top: var(--spacing-6);
 }
@@ -5602,7 +5664,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: var(--font-size-2xs);
   font-weight: var(--font-weight-medium);
   color: var(--color-white);
 }
@@ -5790,7 +5852,7 @@ img {
   font-weight: var(--font-weight-semibold);
   color: var(--color-gray-500);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
 }
 
 .searchable-dropdown-divider {
@@ -5937,7 +5999,7 @@ img {
   font-weight: var(--font-weight-semibold);
   color: var(--color-gray-500);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--letter-spacing-wider);
   margin-bottom: var(--spacing-2);
 }
 

@@ -680,7 +680,7 @@ function renderProjectsGrid(projects) {
         const members = getProjectMembers(project.id);
 
         return `
-          <div class="project-card" data-project-slug="${project.slug}" style="--project-color: ${project.color}">
+          <div class="card card--project project-card" data-project-slug="${project.slug}" style="--project-color: ${project.color}">
             <div class="project-card-header">
               <div>
                 <h3 class="project-name">${escapeHtml(project.name)}</h3>
@@ -1287,7 +1287,7 @@ function renderBoardCard(task, project) {
   const hasFooterContent = (fields.dueDate && task.due_date) || fields.priority || fields.assignee;
 
   return `
-    <div class="board-card ${isArchived ? 'archived' : ''}" data-task-id="${task.id}" draggable="true">
+    <div class="card card--board board-card ${isArchived ? 'archived' : ''}" data-task-id="${task.id}" draggable="true">
       <div class="board-card-header">
         ${fields.taskKey ? `<span class="board-card-key">${escapeHtml(taskKey)}</span>` : ''}
         ${fields.labels && firstLabel ? `
@@ -2397,7 +2397,7 @@ function renderTaskGroup(group, tasks, project, groupBy) {
   const isFlat = group.type === 'none';
 
   return `
-    <div class="task-group ${isFlat ? 'flat' : ''}" data-group-id="${group.id}" data-group-type="${group.type}">
+    <div class="card card--task-group task-group ${isFlat ? 'flat' : ''}" data-group-id="${group.id}" data-group-type="${group.type}">
       <div class="task-group-header ${isFlat ? 'flat' : ''}" ${!isFlat ? `data-toggle-group="${group.id}"` : ''}>
         ${!isFlat ? `
           <span class="task-group-toggle ${isCollapsed ? 'collapsed' : ''}">
@@ -2593,7 +2593,7 @@ function renderMemberRow(member) {
       </td>
       <td>
         <div class="member-name-cell">
-          <div class="member-avatar" style="background: ${stringToColor(member.name)}">
+          <div class="table-avatar member-avatar" style="background: ${stringToColor(member.name)}">
             ${getInitials(member.name)}
           </div>
           <span class="member-name">${escapeHtml(member.name)}</span>
@@ -2634,7 +2634,7 @@ function renderSettingsView(project) {
 
   return `
     <div class="settings-container">
-      <div class="settings-card">
+      <div class="card card--settings settings-card">
         <div class="settings-card-header">
           <span class="settings-card-title">General</span>
         </div>
@@ -2689,7 +2689,7 @@ function renderSettingsView(project) {
         </div>
       </div>
 
-      <div class="settings-card">
+      <div class="card card--settings settings-card">
         <div class="settings-card-header">
           <span class="settings-card-title">Project Status</span>
         </div>
@@ -2713,7 +2713,7 @@ function renderSettingsView(project) {
         </div>
       </div>
 
-      <div class="settings-card settings-card-danger">
+      <div class="card card--settings settings-card settings-card-danger">
         <div class="settings-card-header">
           <span class="settings-card-title">Danger Zone</span>
         </div>
@@ -2842,7 +2842,7 @@ function renderFileRow(file, project) {
       <td>
         ${uploader
           ? `<div class="file-uploader">
-              <div class="file-uploader-avatar" style="background: ${stringToColor(uploader.name)}">
+              <div class="table-avatar file-uploader-avatar" style="background: ${stringToColor(uploader.name)}">
                 ${getInitials(uploader.name)}
               </div>
               <span class="file-uploader-name">${escapeHtml(uploader.name)}</span>
@@ -3021,7 +3021,7 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
     <div class="insights-content">
       <!-- KPI Cards Row -->
       <div class="insights-kpi-row">
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon success">
             ${icons.checkCircle}
           </div>
@@ -3030,7 +3030,7 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
             <span class="insights-kpi-value">${completedTasks.length}</span>
           </div>
         </div>
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon warning">
             ${icons.tasks || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>'}
           </div>
@@ -3039,7 +3039,7 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
             <span class="insights-kpi-value">${incompleteTasks.length}</span>
           </div>
         </div>
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon danger">
             ${icons.warning || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'}
           </div>
@@ -3048,7 +3048,7 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
             <span class="insights-kpi-value">${overdueTasks.length}</span>
           </div>
         </div>
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon info">
             ${icons.clock || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'}
           </div>
@@ -3061,7 +3061,7 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
 
       <!-- Charts Row -->
       <div class="insights-charts-row">
-        <div class="insights-chart-card">
+        <div class="card card--insights insights-chart-card">
           <div class="insights-card-header">
             <span class="insights-card-title">Status Overview</span>
           </div>
@@ -3083,7 +3083,7 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
           </div>
         </div>
 
-        <div class="insights-chart-card">
+        <div class="card card--insights insights-chart-card">
           <div class="insights-card-header">
             <span class="insights-card-title">Priority Overview</span>
           </div>
@@ -3096,7 +3096,7 @@ function renderInsightsOverview(tasks, completedTasks, incompleteTasks, overdueT
       </div>
 
       <!-- Last Updated Tasks -->
-      <div class="insights-table-card">
+      <div class="card card--insights insights-table-card">
         <div class="insights-card-header">
           <span class="insights-card-title">Last Updated Tasks</span>
           <a href="#" class="insights-see-all">See all</a>
@@ -3190,7 +3190,7 @@ function renderInsightsMembers(memberStats, overdueTasks, projectMembers) {
     <div class="insights-content">
       <!-- Member KPI Cards -->
       <div class="insights-kpi-row">
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon info">
             ${icons.users}
           </div>
@@ -3199,7 +3199,7 @@ function renderInsightsMembers(memberStats, overdueTasks, projectMembers) {
             <span class="insights-kpi-value">${projectMembers.length}</span>
           </div>
         </div>
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon danger">
             ${icons.warning || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'}
           </div>
@@ -3208,7 +3208,7 @@ function renderInsightsMembers(memberStats, overdueTasks, projectMembers) {
             <span class="insights-kpi-value">${membersWithOverdue}</span>
           </div>
         </div>
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon warning">
             ${icons.user}
           </div>
@@ -3220,7 +3220,7 @@ function renderInsightsMembers(memberStats, overdueTasks, projectMembers) {
       </div>
 
       <!-- Members Table -->
-      <div class="insights-table-card">
+      <div class="card card--insights insights-table-card">
         <div class="insights-card-header">
           <span class="insights-card-title">Tasks by members</span>
         </div>
@@ -3293,7 +3293,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
     <div class="insights-content">
       <!-- Task KPI Cards -->
       <div class="insights-kpi-row">
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon success">
             ${icons.checkCircle}
           </div>
@@ -3302,7 +3302,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
             <span class="insights-kpi-value">${completedTasks.length}</span>
           </div>
         </div>
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon warning">
             ${icons.tasks || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>'}
           </div>
@@ -3311,7 +3311,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
             <span class="insights-kpi-value">${incompleteTasks.length}</span>
           </div>
         </div>
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon danger">
             ${icons.warning || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'}
           </div>
@@ -3320,7 +3320,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
             <span class="insights-kpi-value">${overdueTasks.length}</span>
           </div>
         </div>
-        <div class="insights-kpi-card">
+        <div class="card card--kpi insights-kpi-card">
           <div class="insights-kpi-icon info">
             ${icons.clock || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'}
           </div>
@@ -3333,7 +3333,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
 
       <!-- Task Tables Row -->
       <div class="insights-tables-row">
-        <div class="insights-table-card insights-table-half">
+        <div class="card card--insights insights-table-card insights-table-half">
           <div class="insights-card-header">
             <span class="insights-card-title">Overdue Tasks</span>
             <a href="#" class="insights-see-all">See all</a>
@@ -3366,7 +3366,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
           ` : renderEmptyTableState('No overdue tasks')}
         </div>
 
-        <div class="insights-table-card insights-table-half">
+        <div class="card card--insights insights-table-card insights-table-half">
           <div class="insights-card-header">
             <span class="insights-card-title">Tasks completed early</span>
             <a href="#" class="insights-see-all">See all</a>
@@ -3400,7 +3400,7 @@ function renderInsightsTasks(tasks, completedTasks, incompleteTasks, overdueTask
       </div>
 
       <div class="insights-tables-row">
-        <div class="insights-table-card insights-table-half">
+        <div class="card card--insights insights-table-card insights-table-half">
           <div class="insights-card-header">
             <span class="insights-card-title">Tasks completed late</span>
             <a href="#" class="insights-see-all">See all</a>
@@ -5830,14 +5830,19 @@ function renderFilePreviewPanel(file, projectSlug) {
     </div>
 
     <div class="file-preview-body">
-      <div class="file-preview-content">
-        ${placeholderIcon}
-        <div class="file-preview-placeholder-text">Preview not available</div>
-        <div class="file-preview-placeholder-hint">Download the file to view its contents</div>
+      <!-- Preview Section -->
+      <div class="file-preview-section">
+        <div class="file-preview-section-header">Preview</div>
+        <div class="file-preview-content">
+          ${placeholderIcon}
+          <div class="file-preview-placeholder-text">Preview not available</div>
+          <div class="file-preview-placeholder-hint">Download the file to view its contents</div>
+        </div>
       </div>
 
-      <div class="file-preview-details">
-        <div class="file-preview-details-title">File Details</div>
+      <!-- Details Section -->
+      <div class="file-preview-section">
+        <div class="file-preview-section-header">Details</div>
         <div class="file-preview-details-grid">
           <span class="file-preview-details-label">Name</span>
           <span class="file-preview-details-value">${escapeHtml(file.name)}</span>
@@ -5961,6 +5966,7 @@ function renderTaskPanel(task, projectSlug) {
              placeholder="Task title...">
 
       <div class="task-panel-meta">
+        <div class="task-panel-section-header">Details</div>
         <!-- Status -->
         <div class="task-panel-field">
           <span class="task-panel-field-label">Status</span>
@@ -6041,16 +6047,16 @@ function renderTaskPanel(task, projectSlug) {
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Description Section -->
-      <div class="task-panel-section">
-        <div class="task-panel-section-header">
-          Description
+        <!-- Description -->
+        <div class="task-panel-field task-panel-field--description">
+          <span class="task-panel-field-label">Description</span>
+          <div class="task-panel-field-value">
+            <textarea class="task-panel-description-input"
+                      data-field="description"
+                      placeholder="Add a description...">${escapeHtml(task.description || '')}</textarea>
+          </div>
         </div>
-        <textarea class="task-panel-description-input"
-                  data-field="description"
-                  placeholder="Add a description...">${escapeHtml(task.description || '')}</textarea>
       </div>
 
       <!-- Attachments Section -->
