@@ -1179,7 +1179,7 @@ function renderBoardColumn(status, tasks, project, swimlane) {
       <div class="board-column-header">
         <div class="board-column-title">
           <span class="board-column-name">${escapeHtml(status.name)}</span>
-          <span class="board-column-count">${tasks.length}</span>
+          <span class="count-badge">${tasks.length}</span>
         </div>
         <div class="board-column-actions">
           <button class="icon-btn board-column-btn" title="Add task">
@@ -1296,7 +1296,7 @@ function renderBoardCard(task, project) {
           </span>
         ` : ''}
       </div>
-      <div class="board-card-title">${escapeHtml(task.title)}</div>
+      <div class="task-title">${escapeHtml(task.title)}</div>
       ${hasFooterContent ? `
         <div class="board-card-footer">
           <div class="board-card-meta">
@@ -2406,7 +2406,7 @@ function renderTaskGroup(group, tasks, project, groupBy) {
           <div class="task-group-color" style="background: ${group.color}"></div>
         ` : ''}
         <span class="task-group-name">${escapeHtml(group.name)}</span>
-        <span class="task-group-count">${tasks.length}</span>
+        <span class="count-badge">${tasks.length}</span>
       </div>
       ${!isCollapsed || isFlat ? `
         <div class="task-list">
@@ -5675,8 +5675,8 @@ function renderTaskPanelContainer() {
 
   const panelOverlay = document.createElement('div');
   panelOverlay.id = 'task-panel-overlay';
-  panelOverlay.className = 'task-panel-overlay';
-  panelOverlay.innerHTML = '<div class="task-panel" id="task-panel-content"></div>';
+  panelOverlay.className = 'panel-overlay';
+  panelOverlay.innerHTML = '<div class="side-panel task-panel" id="task-panel-content"></div>';
   document.body.appendChild(panelOverlay);
 
   // Close on overlay click (but not panel click)
@@ -5732,8 +5732,8 @@ function renderFilePreviewPanelContainer() {
 
   const panelOverlay = document.createElement('div');
   panelOverlay.id = 'file-preview-overlay';
-  panelOverlay.className = 'file-preview-overlay';
-  panelOverlay.innerHTML = '<div class="file-preview-panel" id="file-preview-content"></div>';
+  panelOverlay.className = 'panel-overlay';
+  panelOverlay.innerHTML = '<div class="side-panel file-preview-panel" id="file-preview-content"></div>';
   document.body.appendChild(panelOverlay);
 
   // Close on overlay click (but not panel click)
