@@ -879,7 +879,7 @@ function renderTabContent(tab, statuses, tasksByStatus, tasks, project) {
 
   switch (tab) {
     case 'board':
-      return renderBoardToolbar(project) + renderBoardView(statuses, tasksByStatus, tasks, project, swimlane);
+      return `<div class="board-view">${renderBoardToolbar(project)}${renderBoardView(statuses, tasksByStatus, tasks, project, swimlane)}</div>`;
     case 'roadmap':
       return renderRoadmapView(tasks, project);
     case 'insights':
@@ -891,7 +891,7 @@ function renderTabContent(tab, statuses, tasksByStatus, tasks, project) {
     case 'settings':
       return renderSettingsView(project);
     default:
-      return renderTaskListToolbar(project, groupBy) + renderTaskListView(statuses, tasksByStatus, tasks, project, groupBy);
+      return `<div class="task-list-view">${renderTaskListToolbar(project, groupBy)}${renderTaskListView(statuses, tasksByStatus, tasks, project, groupBy)}</div>`;
   }
 }
 
@@ -926,8 +926,8 @@ function renderTaskListToolbar(project, groupBy) {
   const searchExpanded = searchQuery.length > 0;
 
   return `
-    <div class="task-toolbar">
-      <div class="task-filters">
+    <div class="view-toolbar view-toolbar--wrap">
+      <div class="toolbar-filters">
         <div class="toolbar-search ${searchExpanded ? 'expanded' : ''}" data-project-id="${project.id}">
           <button class="filter-btn toolbar-search-toggle" data-action="toggle-search" aria-label="Search tasks" aria-expanded="${searchExpanded}">
             ${icons.search}
@@ -965,7 +965,7 @@ function renderTaskListToolbar(project, groupBy) {
           <span class="checkbox-text">Assigned to me</span>
         </label>
       </div>
-      <div class="task-actions">
+      <div class="toolbar-actions">
         <label class="checkbox-label">
           <input type="checkbox" class="checkbox-input" data-action="toggle-archived" ${showArchived ? 'checked' : ''}>
           <span class="checkbox-custom"></span>
@@ -999,8 +999,8 @@ function renderBoardToolbar(project) {
   const searchExpanded = searchQuery.length > 0;
 
   return `
-    <div class="task-toolbar">
-      <div class="task-filters">
+    <div class="view-toolbar view-toolbar--wrap">
+      <div class="toolbar-filters">
         <div class="toolbar-search ${searchExpanded ? 'expanded' : ''}" data-project-id="${project.id}">
           <button class="filter-btn toolbar-search-toggle" data-action="toggle-search" aria-label="Search tasks" aria-expanded="${searchExpanded}">
             ${icons.search}
@@ -1033,7 +1033,7 @@ function renderBoardToolbar(project) {
           <span class="checkbox-text">Assigned to me</span>
         </label>
       </div>
-      <div class="task-actions">
+      <div class="toolbar-actions">
         <label class="checkbox-label">
           <input type="checkbox" class="checkbox-input" data-action="toggle-archived" ${showArchived ? 'checked' : ''}>
           <span class="checkbox-custom"></span>
@@ -2526,9 +2526,11 @@ function renderMembersView(tasks, project) {
 
   return `
     <div class="card members-container">
-      <div class="members-header">
-        <span class="members-count">${selectedCount > 0 ? `${selectedCount} selected` : `${members.length} Members`}</span>
-        <div class="members-actions">
+      <div class="view-toolbar view-toolbar--card">
+        <div class="toolbar-filters">
+          <span class="toolbar-count">${selectedCount > 0 ? `${selectedCount} selected` : `${members.length} Members`}</span>
+        </div>
+        <div class="toolbar-actions">
           <button class="btn-bulk danger ${selectedCount === 0 ? 'disabled' : ''}" data-action="delete-members" ${selectedCount === 0 ? 'disabled' : ''}>
             ${icons.trash} Delete
           </button>
@@ -2749,9 +2751,11 @@ function renderFilesView(project) {
 
   return `
     <div class="card files-container">
-      <div class="files-header">
-        <span class="files-count">${selectedCount > 0 ? `${selectedCount} selected` : `${files.length} Files`}</span>
-        <div class="files-actions">
+      <div class="view-toolbar view-toolbar--card">
+        <div class="toolbar-filters">
+          <span class="toolbar-count">${selectedCount > 0 ? `${selectedCount} selected` : `${files.length} Files`}</span>
+        </div>
+        <div class="toolbar-actions">
           <button class="btn-bulk ${selectedCount === 0 ? 'disabled' : ''}" data-action="download-selected" ${selectedCount === 0 ? 'disabled' : ''}>
             ${icons.download} Download
           </button>
@@ -2894,6 +2898,9 @@ function renderFilesEmptyState() {
 function renderInsightsView(tasks, project) {
   const currentTab = state.currentInsightsTab || 'overview';
   const showArchived = state.showArchivedTasks[project.id] || false;
+  const assignedToMe = state.assignedToMe[project.id] || false;
+  const selectedAssignees = state.assigneeFilter[project.id] || [];
+  const assigneeFilterCount = selectedAssignees.length;
 
   // Calculate KPIs
   const completedTasks = tasks.filter(t => {
@@ -2975,13 +2982,24 @@ function renderInsightsView(tasks, project) {
 
   return `
     <div class="insights-container">
-      <div class="insights-header">
-        <nav class="insights-tabs">
-          <button class="insights-tab ${currentTab === 'overview' ? 'active' : ''}" data-insights-tab="overview">Overview</button>
-          <button class="insights-tab ${currentTab === 'members' ? 'active' : ''}" data-insights-tab="members">Members</button>
-          <button class="insights-tab ${currentTab === 'tasks' ? 'active' : ''}" data-insights-tab="tasks">Tasks</button>
-        </nav>
-        <div class="insights-actions">
+      <div class="view-toolbar">
+        <div class="toolbar-filters">
+          <nav class="insights-tabs">
+            <button class="insights-tab ${currentTab === 'overview' ? 'active' : ''}" data-insights-tab="overview">Overview</button>
+            <button class="insights-tab ${currentTab === 'members' ? 'active' : ''}" data-insights-tab="members">Members</button>
+            <button class="insights-tab ${currentTab === 'tasks' ? 'active' : ''}" data-insights-tab="tasks">Tasks</button>
+          </nav>
+          <button class="filter-btn ${assigneeFilterCount > 0 ? 'active' : ''}" data-action="toggle-assignee-filter">
+            ${icons.user} Assignee${assigneeFilterCount > 0 ? ` (${assigneeFilterCount})` : ''}
+            ${icons.chevronDown}
+          </button>
+          <label class="checkbox-label">
+            <input type="checkbox" class="checkbox-input" data-action="toggle-assigned-to-me" ${assignedToMe ? 'checked' : ''}>
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Assigned to me</span>
+          </label>
+        </div>
+        <div class="toolbar-actions">
           <label class="checkbox-label">
             <input type="checkbox" class="checkbox-input" data-action="toggle-archived" ${showArchived ? 'checked' : ''}>
             <span class="checkbox-custom"></span>
@@ -3477,17 +3495,21 @@ function renderRoadmapView(tasks, project) {
 
   return `
     <div class="roadmap-view">
-      <div class="roadmap-toolbar">
-        <div class="roadmap-zoom">
-          <button class="roadmap-zoom-btn${scale === 'week' ? ' active' : ''}" data-scale="week">Week</button>
-          <button class="roadmap-zoom-btn${scale === 'month' ? ' active' : ''}" data-scale="month">Month</button>
-          <button class="roadmap-zoom-btn${scale === 'quarter' ? ' active' : ''}" data-scale="quarter">Quarter</button>
-          <button class="roadmap-zoom-btn${scale === 'year' ? ' active' : ''}" data-scale="year">Year</button>
+      <div class="view-toolbar view-toolbar--wrap">
+        <div class="toolbar-filters">
+          <div class="roadmap-zoom">
+            <button class="roadmap-zoom-btn${scale === 'week' ? ' active' : ''}" data-scale="week">Week</button>
+            <button class="roadmap-zoom-btn${scale === 'month' ? ' active' : ''}" data-scale="month">Month</button>
+            <button class="roadmap-zoom-btn${scale === 'quarter' ? ' active' : ''}" data-scale="quarter">Quarter</button>
+            <button class="roadmap-zoom-btn${scale === 'year' ? ' active' : ''}" data-scale="year">Year</button>
+          </div>
         </div>
-        <div class="roadmap-nav">
-          <button class="roadmap-nav-btn" data-action="roadmap-prev">${icons.chevronLeft}</button>
-          <button class="roadmap-today-btn" data-action="roadmap-today">Today</button>
-          <button class="roadmap-nav-btn" data-action="roadmap-next">${icons.chevronRight}</button>
+        <div class="toolbar-actions">
+          <div class="roadmap-nav">
+            <button class="roadmap-nav-btn" data-action="roadmap-prev">${icons.chevronLeft}</button>
+            <button class="roadmap-today-btn" data-action="roadmap-today">Today</button>
+            <button class="roadmap-nav-btn" data-action="roadmap-next">${icons.chevronRight}</button>
+          </div>
         </div>
       </div>
       <div class="roadmap-content">
