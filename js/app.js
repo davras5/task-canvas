@@ -1279,19 +1279,27 @@ function renderBoardCard(task, project) {
   const firstLabel = taskLabels[0];
   const status = getStatusById(task.status_id);
   const priority = task.priority_id ? getPriorityById(task.priority_id) : null;
+  const priorityBg = priority ? hexToRgba(priority.color, 0.15) : '';
   const taskKey = `${project.identifier}-${task.sequence_id}`;
   const dueDateOverdue = isOverdue(task.due_date);
   const isArchived = task.is_archived;
 
   // Check if footer has any visible content
-  const hasFooterContent = (fields.dueDate && task.due_date) || fields.priority || fields.assignee;
+  const hasFooterContent = (fields.dueDate && task.due_date) || fields.assignee;
 
   return `
     <div class="card card--board board-card ${isArchived ? 'archived' : ''}" data-task-id="${task.id}" draggable="true">
       <div class="board-card-header">
-        ${fields.taskKey ? `<span class="task-key">${escapeHtml(taskKey)}</span>` : ''}
-        ${fields.labels && firstLabel ? `
-          <span class="task-label">${escapeHtml(firstLabel.name)}</span>
+        <div class="board-card-header-left">
+          ${fields.taskKey ? `<span class="task-key">${escapeHtml(taskKey)}</span>` : ''}
+          ${fields.labels && firstLabel ? `
+            <span class="task-label">${escapeHtml(firstLabel.name)}</span>
+          ` : ''}
+        </div>
+        ${fields.priority && priority ? `
+          <span class="task-priority" style="background: ${priorityBg}; color: var(--color-text-secondary)">
+            ${getPriorityIcon(priority.name)} ${escapeHtml(priority.name)}
+          </span>
         ` : ''}
       </div>
       <div class="task-title">${escapeHtml(task.title)}</div>
@@ -1299,17 +1307,12 @@ function renderBoardCard(task, project) {
         <div class="board-card-footer">
           <div class="board-card-meta">
             ${fields.dueDate && task.due_date ? `
-              <span class="board-card-due ${dueDateOverdue ? 'overdue' : ''}">
-                ${icons.calendar} ${formatDate(task.due_date)}
+              <span class="task-due-date ${dueDateOverdue ? 'overdue' : ''}">
+                ${formatDate(task.due_date)}
               </span>
             ` : ''}
           </div>
           <div class="board-card-actions">
-            ${fields.priority ? `
-              <button class="board-card-priority-btn" title="Set priority" style="${priority ? `color: ${priority.color}` : ''}">
-                ${priority ? icons.flag : icons.flagOutline}
-              </button>
-            ` : ''}
             ${fields.assignee ? `
               ${assignee
                 ? `<div class="table-avatar board-card-assignee" style="background: ${stringToColor(assignee.name)}" title="${escapeHtml(assignee.name)}">
@@ -2440,11 +2443,9 @@ function renderTaskRow(task, project, group, groupBy) {
   // Always get the task's actual status for display
   const status = getStatusById(task.status_id);
   const statusBg = status ? hexToRgba(status.color, 0.15) : '';
-  const statusText = status ? status.color : '';
 
   // Priority colors
   const priorityBg = priority ? hexToRgba(priority.color, 0.15) : '';
-  const priorityText = priority ? priority.color : '';
 
   return `
     <div class="task-row ${isSelected ? 'selected' : ''} ${isArchived ? 'archived' : ''}" data-task-id="${task.id}" draggable="true">
@@ -2455,7 +2456,7 @@ function renderTaskRow(task, project, group, groupBy) {
       <span class="task-title">${escapeHtml(task.title)}</span>
       ${fields.progress ? `<span class="task-progress">0%</span>` : ''}
       ${fields.status ? `
-        <span class="task-status clickable" style="background: ${statusBg}; color: ${statusText}">
+        <span class="task-status clickable" style="background: ${statusBg}; color: var(--color-text-secondary)">
           ${status ? escapeHtml(status.name) : 'No Status'}
         </span>
       ` : ''}
@@ -2480,7 +2481,7 @@ function renderTaskRow(task, project, group, groupBy) {
         </div>
       ` : ''}
       ${fields.priority ? `
-        <span class="task-priority clickable ${priority ? '' : 'empty'}" style="background: ${priorityBg}; color: ${priorityText}">
+        <span class="task-priority clickable ${priority ? '' : 'empty'}" style="background: ${priorityBg}; color: var(--color-text-secondary)">
           ${priority ? `${getPriorityIcon(priority.name)} ${escapeHtml(priority.name)}` : '+ Priority'}
         </span>
       ` : ''}
@@ -3861,6 +3862,14 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function darkenColor(hex, factor = 0.3) {
+  if (!hex) return hex;
+  const r = Math.round(parseInt(hex.slice(1, 3), 16) * (1 - factor));
+  const g = Math.round(parseInt(hex.slice(3, 5), 16) * (1 - factor));
+  const b = Math.round(parseInt(hex.slice(5, 7), 16) * (1 - factor));
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const date = new Date(dateStr);
@@ -3871,7 +3880,7 @@ function formatDate(dateStr) {
   if (diffDays === 1) return 'Tomorrow';
   if (diffDays === -1) return 'Yesterday';
 
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function isOverdue(dateStr) {
@@ -5967,9 +5976,8 @@ function renderTaskPanel(task, projectSlug) {
   const taskFiles = state.files.filter(f => f.task_id === task.id);
 
   const statusBg = status ? hexToRgba(status.color, 0.15) : '';
-  const statusText = status?.color || FALLBACK_COLOR;
+  const statusDot = status?.color || FALLBACK_COLOR;
   const priorityBg = priority ? hexToRgba(priority.color, 0.15) : '';
-  const priorityText = priority?.color || '';
 
   const panelContent = document.getElementById('task-panel-content');
   if (!panelContent) return;
@@ -6006,9 +6014,9 @@ function renderTaskPanel(task, projectSlug) {
           <span class="task-panel-field-label">Status</span>
           <div class="task-panel-field-value">
             <span class="task-panel-status-badge"
-                  style="background: ${statusBg}; color: ${statusText}"
+                  style="background: ${statusBg}; color: var(--color-text-secondary)"
                   data-action="change-status">
-              <span class="task-panel-status-dot" style="background: ${statusText}"></span>
+              <span class="task-panel-status-dot" style="background: ${statusDot}"></span>
               ${escapeHtml(status?.name || 'No status')}
             </span>
           </div>
@@ -6019,7 +6027,7 @@ function renderTaskPanel(task, projectSlug) {
           <span class="task-panel-field-label">Priority</span>
           <div class="task-panel-field-value">
             <span class="task-panel-priority-badge ${priority ? '' : 'empty'}"
-                  style="background: ${priorityBg}; color: ${priorityText}"
+                  style="background: ${priorityBg}; color: var(--color-text-secondary)"
                   data-action="change-priority">
               ${priority ? `${getPriorityIcon(priority.name)} ${escapeHtml(priority.name)}` : 'Set priority'}
             </span>

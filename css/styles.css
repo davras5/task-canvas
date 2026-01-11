@@ -1299,9 +1299,10 @@ img {
 }
 
 .task-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto auto auto;
   align-items: center;
-  gap: var(--spacing-3);
+  gap: var(--spacing-4);
   padding: var(--spacing-4) var(--spacing-4);
   border-bottom: 1px solid var(--color-border-muted);
   font-size: var(--font-size-sm);
@@ -1336,9 +1337,9 @@ img {
 }
 
 .task-key {
-  font-family: monospace;
   font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-text-secondary);
   background: var(--color-bg-secondary);
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-sm);
@@ -1346,6 +1347,7 @@ img {
 
 .task-title {
   color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
 }
 
 .task-row .task-title {
@@ -1370,11 +1372,10 @@ img {
   padding: var(--spacing-1) var(--spacing-3);
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-wide);
   white-space: nowrap;
-  flex-shrink: 0;
-  min-width: 90px;
+  min-width: 100px;
 }
 
 .task-assignees {
@@ -1468,12 +1469,12 @@ img {
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-normal);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100px;
-  background: var(--color-bg-tertiary);
+  background: var(--color-bg-secondary);
   color: var(--color-text-secondary);
 }
 
@@ -1507,11 +1508,13 @@ img {
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-normal);
   white-space: nowrap;
-  flex-shrink: 0;
-  min-width: 80px;
-  text-align: center;
+  min-width: 85px;
+}
+
+.task-priority svg {
+  fill: currentColor;
 }
 
 .task-priority.empty {
@@ -1526,14 +1529,15 @@ img {
 }
 
 .task-due-date {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
+  background: var(--color-bg-secondary);
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
   padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
   white-space: nowrap;
-  flex-shrink: 0;
-  min-width: 80px;
+  min-width: 100px;
   text-align: center;
 }
 
@@ -1927,6 +1931,7 @@ img {
   }
 
   .task-row {
+    display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-2);
   }
@@ -1950,6 +1955,7 @@ img {
   .task-priority,
   .task-assignees {
     order: 2;
+    min-width: auto;
   }
 
   .project-list-progress,
@@ -2134,8 +2140,15 @@ img {
 .board-card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--spacing-2);
   margin-bottom: var(--spacing-2);
+}
+
+.board-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
 }
 
 .board-card-footer {
@@ -5842,7 +5855,7 @@ img {
   background: var(--color-bg-subtle);
   border-top: 1px solid var(--color-border-default);
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
 }
 
 .footer-left {
@@ -5852,7 +5865,7 @@ img {
 }
 
 .footer-link {
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   transition: color var(--transition-fast);
 }
 
@@ -5865,7 +5878,7 @@ img {
 }
 
 .footer-right {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-muted);
 }
 
 .footer-version {
