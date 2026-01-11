@@ -5280,15 +5280,15 @@ function showAssigneeFilterDropdown(buttonElement, projectSlug) {
           </label>
         `).join('')}
       </div>
-      ${selectedAssignees.length > 0 ? `
-        <div class="dropdown-footer">
-          <button class="dropdown-clear-btn" data-action="clear-assignee-filter">Clear filter</button>
-        </div>
-      ` : ''}
+      <div class="dropdown-footer" ${selectedAssignees.length === 0 ? 'style="display: none;"' : ''}>
+        <button class="dropdown-clear-btn" data-action="clear-assignee-filter">Clear filter</button>
+      </div>
     `
   });
 
   if (!dropdown) return;
+
+  const dropdownFooter = dropdown.querySelector('.dropdown-footer');
 
   // Handle search
   const searchInput = dropdown.querySelector('.dropdown-search-input');
@@ -5316,6 +5316,9 @@ function showAssigneeFilterDropdown(buttonElement, projectSlug) {
     } else {
       state.assigneeFilter[project.id] = state.assigneeFilter[project.id].filter(id => id !== assigneeId);
     }
+
+    // Show/hide clear filter button based on selection count
+    dropdownFooter.style.display = state.assigneeFilter[project.id].length > 0 ? '' : 'none';
 
     renderProjectDetail(projectSlug);
   });
