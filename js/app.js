@@ -1285,17 +1285,12 @@ function renderBoardCard(task, project) {
   const isArchived = task.is_archived;
 
   // Check if footer has any visible content
-  const hasFooterContent = (fields.dueDate && task.due_date) || fields.assignee;
+  const hasFooterContent = (fields.dueDate && task.due_date) || fields.assignee || fields.progress;
 
   return `
     <div class="card card--board board-card ${isArchived ? 'archived' : ''}" data-task-id="${task.id}" draggable="true">
       <div class="board-card-header">
-        <div class="board-card-header-left">
-          ${fields.taskKey ? `<span class="task-key">${escapeHtml(taskKey)}</span>` : ''}
-          ${fields.labels && firstLabel ? `
-            <span class="task-label">${escapeHtml(firstLabel.name)}</span>
-          ` : ''}
-        </div>
+        ${fields.taskKey ? `<span class="task-key">${escapeHtml(taskKey)}</span>` : ''}
         ${fields.priority && priority ? `
           <span class="task-priority" style="background: ${priorityBg}; color: var(--color-text-secondary)">
             ${getPriorityIcon(priority.name)} ${escapeHtml(priority.name)}
@@ -1303,9 +1298,15 @@ function renderBoardCard(task, project) {
         ` : ''}
       </div>
       <div class="task-title">${escapeHtml(task.title)}</div>
+      ${fields.labels && taskLabels.length > 0 ? `
+        <div class="board-card-labels">
+          ${taskLabels.map(label => `<span class="task-label">${escapeHtml(label.name)}</span>`).join('')}
+        </div>
+      ` : ''}
       ${hasFooterContent ? `
         <div class="board-card-footer">
           <div class="board-card-meta">
+            ${fields.progress ? `<span class="task-progress">0%</span>` : ''}
             ${fields.dueDate && task.due_date ? `
               <span class="task-due-date ${dueDateOverdue ? 'overdue' : ''}">
                 ${formatDate(task.due_date)}
@@ -2448,7 +2449,7 @@ function renderTaskRow(task, project, group, groupBy) {
   const priorityBg = priority ? hexToRgba(priority.color, 0.15) : '';
 
   return `
-    <div class="task-row ${isSelected ? 'selected' : ''} ${isArchived ? 'archived' : ''}" data-task-id="${task.id}" draggable="true">
+    <div class="task-row ${isSelected ? 'selected' : ''} ${isArchived ? 'archived' : ''} ${fields.progress ? 'has-progress' : ''}" data-task-id="${task.id}" draggable="true">
       <div class="task-row-start">
         <span class="task-drag-handle">${icons.grip}</span>
         ${fields.taskKey ? `<span class="task-key">${escapeHtml(taskKey)}</span>` : ''}

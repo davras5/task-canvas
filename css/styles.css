@@ -1300,7 +1300,7 @@ img {
 
 .task-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto auto auto;
+  grid-template-columns: auto 1fr 90px 36px 120px 80px 100px;
   align-items: center;
   gap: var(--spacing-4);
   padding: var(--spacing-4) var(--spacing-4);
@@ -1308,6 +1308,22 @@ img {
   font-size: var(--font-size-sm);
   transition: all var(--transition-fast);
   cursor: pointer;
+}
+
+.task-row.has-progress {
+  grid-template-columns: auto 1fr 50px 90px 36px 120px 80px 100px;
+}
+
+/* Prevent badges from stretching to fill grid cells */
+.task-row > .task-status,
+.task-row > .task-priority {
+  justify-self: center;
+}
+
+.task-row > .task-labels,
+.task-row > .task-due-date,
+.task-row > .task-progress {
+  justify-self: start;
 }
 
 .task-row:last-child {
@@ -1359,10 +1375,10 @@ img {
 }
 
 .task-progress {
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-  width: 50px;
-  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  white-space: nowrap;
 }
 
 .task-status {
@@ -1375,7 +1391,6 @@ img {
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-wide);
   white-space: nowrap;
-  min-width: 100px;
 }
 
 .task-assignees {
@@ -1458,9 +1473,6 @@ img {
   gap: var(--spacing-1);
   flex-wrap: nowrap;
   overflow: hidden;
-  width: 140px;
-  min-width: 140px;
-  flex-shrink: 0;
 }
 
 .task-label {
@@ -1510,7 +1522,6 @@ img {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-normal);
   white-space: nowrap;
-  min-width: 85px;
 }
 
 .task-priority svg {
@@ -1537,8 +1548,6 @@ img {
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
   white-space: nowrap;
-  min-width: 100px;
-  text-align: center;
 }
 
 .task-due-date.clickable {
@@ -2149,6 +2158,17 @@ img {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+}
+
+.board-card-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1);
+  margin-top: var(--spacing-2);
+}
+
+.board-card-labels .task-label {
+  max-width: none;
 }
 
 .board-card-footer {
