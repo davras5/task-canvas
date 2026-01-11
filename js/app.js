@@ -3512,7 +3512,7 @@ function renderRoadmapView(tasks, project) {
           </div>
         </div>
       </div>
-      <div class="roadmap-content">
+      <div class="card roadmap-content">
         <div class="gantt-wrapper">
         <div class="gantt-sidebar">
           <div class="gantt-sidebar-header">Task Name</div>
