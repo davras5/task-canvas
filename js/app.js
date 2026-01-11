@@ -344,7 +344,7 @@ function handleFileUpload(fileList, projectId, taskId) {
     const task = getTaskById(state.openTaskId);
     if (task) {
       renderTaskPanel(task, state.openTaskProjectSlug);
-      setupTaskPanelEventListeners(state.openTaskId, state.openTaskProjectSlug);
+      attachTaskPanelEventListeners(state.openTaskId, state.openTaskProjectSlug);
     }
   }
 
@@ -1291,9 +1291,7 @@ function renderBoardCard(task, project) {
       <div class="board-card-header">
         ${fields.taskKey ? `<span class="task-key">${escapeHtml(taskKey)}</span>` : ''}
         ${fields.labels && firstLabel ? `
-          <span class="task-label" style="background: ${hexToRgba(firstLabel.color, 0.15)}; color: ${firstLabel.color}">
-            ${escapeHtml(firstLabel.name)}
-          </span>
+          <span class="task-label">${escapeHtml(firstLabel.name)}</span>
         ` : ''}
       </div>
       <div class="task-title">${escapeHtml(task.title)}</div>
@@ -2474,9 +2472,7 @@ function renderTaskRow(task, project, group, groupBy) {
       ${fields.labels ? `
         <div class="task-labels clickable" title="Manage labels">
           ${taskLabels.length > 0 ? `
-            <span class="task-label" style="background: ${hexToRgba(taskLabels[0].color, 0.15)}; color: ${taskLabels[0].color}">
-              ${escapeHtml(taskLabels[0].name)}
-            </span>
+            <span class="task-label">${escapeHtml(taskLabels[0].name)}</span>
             ${taskLabels.length > 1 ? `<span class="task-label more">+${taskLabels.length - 1}</span>` : ''}
           ` : `
             <span class="task-add-label">+ Label</span>
@@ -5476,7 +5472,6 @@ function showLabelPicker(taskId, buttonElement, projectSlug) {
       ${labels.map(label => `
         <label class="label-picker-item">
           <input type="checkbox" ${taskLabelIds.includes(label.id) ? 'checked' : ''} data-label-id="${label.id}">
-          <span class="label-picker-color" style="background: ${label.color}"></span>
           <span class="label-picker-name">${escapeHtml(label.name)}</span>
         </label>
       `).join('')}
@@ -5526,7 +5521,20 @@ function toggleTaskLabel(taskId, labelId, projectSlug) {
   task.updated_at = new Date().toISOString();
   renderProjectDetail(projectSlug);
 
-  // Re-open the label picker to continue editing
+  // Re-render panel if open and re-open the label picker
+  const panelAddLabel = document.querySelector('.task-panel [data-action="add-label"]');
+  if (panelAddLabel && state.openTaskId === taskId) {
+    const updatedTask = getTaskById(taskId);
+    renderTaskPanel(updatedTask, projectSlug);
+    attachTaskPanelEventListeners(taskId, projectSlug);
+    const newAddLabelBtn = document.querySelector('.task-panel [data-action="add-label"]');
+    if (newAddLabelBtn) {
+      setTimeout(() => showLabelPicker(taskId, newAddLabelBtn, projectSlug), 50);
+    }
+    return;
+  }
+
+  // Re-open the label picker for task row to continue editing
   const labelsEl = document.querySelector(`.task-row[data-task-id="${taskId}"] .task-labels`);
   if (labelsEl) {
     setTimeout(() => showLabelPicker(taskId, labelsEl, projectSlug), 50);
@@ -5703,6 +5711,7 @@ function openTaskPanel(taskId, projectSlug) {
 
   renderTaskPanelContainer();
   renderTaskPanel(task, projectSlug);
+  attachTaskPanelEventListeners(taskId, projectSlug);
 
   const overlay = document.getElementById('task-panel-overlay');
   if (overlay) {
@@ -6037,9 +6046,7 @@ function renderTaskPanel(task, projectSlug) {
           <div class="task-panel-field-value">
             <div class="task-panel-labels">
               ${taskLabels.map(label => `
-                <span class="task-panel-label" style="background: ${hexToRgba(label.color, 0.15)}; color: ${label.color}">
-                  ${escapeHtml(label.name)}
-                </span>
+                <span class="task-label">${escapeHtml(label.name)}</span>
               `).join('')}
               <button class="task-panel-add-label" data-action="add-label">
                 ${icons.plus} Add
@@ -6252,10 +6259,11 @@ function attachTaskPanelEventListeners(taskId, projectSlug) {
     });
   });
 
-  // Add label
+  // Add label - reuse existing label picker
   panel.querySelectorAll('[data-action="add-label"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      showPanelLabelDropdown(taskId, btn, projectSlug);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showLabelPicker(taskId, btn, projectSlug);
     });
   });
 
@@ -6403,74 +6411,6 @@ function showPanelAssigneeDropdown(taskId, buttonElement, projectSlug) {
     renderTaskPanel(updatedTask, projectSlug);
     showToast('Assignee updated', 'success');
   });
-}
-
-function showPanelLabelDropdown(taskId, buttonElement, projectSlug) {
-  const task = getTaskById(taskId);
-  if (!task) return;
-
-  const project = getProjectBySlug(projectSlug);
-  if (!project) return;
-
-  const labels = getLabelsForProject(project.id);
-  const currentLabelIds = task.label_ids || [];
-
-  closePanelDropdown();
-
-  const dropdown = document.createElement('div');
-  dropdown.className = 'dropdown-menu open';
-  dropdown.id = 'panel-dropdown';
-  dropdown.innerHTML = `
-    ${labels.length === 0 ? `
-      <div class="dropdown-empty">No labels available</div>
-    ` : labels.map(label => `
-      <button class="dropdown-item dropdown-item-checkbox ${currentLabelIds.includes(label.id) ? 'active' : ''}"
-              data-value="${label.id}">
-        <span class="dropdown-checkbox ${currentLabelIds.includes(label.id) ? 'checked' : ''}">
-          ${currentLabelIds.includes(label.id) ? icons.check : ''}
-        </span>
-        <span class="dropdown-item-dot" style="background: ${label.color}"></span>
-        ${escapeHtml(label.name)}
-      </button>
-    `).join('')}
-  `;
-
-  positionDropdown(dropdown, buttonElement);
-  document.body.appendChild(dropdown);
-
-  dropdown.querySelectorAll('[data-value]').forEach(item => {
-    item.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const labelId = item.dataset.value;
-      const currentLabels = task.label_ids || [];
-      let newLabels;
-
-      if (currentLabels.includes(labelId)) {
-        newLabels = currentLabels.filter(id => id !== labelId);
-        item.classList.remove('active');
-        item.querySelector('.dropdown-checkbox').classList.remove('checked');
-        item.querySelector('.dropdown-checkbox').innerHTML = '';
-      } else {
-        newLabels = [...currentLabels, labelId];
-        item.classList.add('active');
-        item.querySelector('.dropdown-checkbox').classList.add('checked');
-        item.querySelector('.dropdown-checkbox').innerHTML = icons.check;
-      }
-
-      task.label_ids = newLabels;
-      task.updated_at = new Date().toISOString();
-
-      // Re-render panel to show updated labels
-      const updatedTask = getTaskById(taskId);
-      renderTaskPanel(updatedTask, projectSlug);
-      setupTaskPanelEventListeners(taskId, projectSlug);
-      renderProjectDetail(projectSlug);
-    });
-  });
-
-  setTimeout(() => {
-    document.addEventListener('click', handlePanelDropdownOutsideClick);
-  }, 10);
 }
 
 function positionDropdown(dropdown, buttonElement) {

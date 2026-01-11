@@ -194,9 +194,6 @@ img {
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--spacing-6);
-  position: sticky;
-  top: 0;
-  z-index: var(--z-dropdown);
 }
 
 .header-left {
@@ -1446,6 +1443,8 @@ img {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100px;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
 }
 
 .task-label.more {
@@ -4328,13 +4327,6 @@ img {
   accent-color: var(--color-primary-500);
 }
 
-.label-picker-color {
-  width: 12px;
-  height: 12px;
-  border-radius: var(--radius-full);
-  flex-shrink: 0;
-}
-
 .label-picker-name {
   font-size: var(--font-size-sm);
   color: var(--color-gray-700);
@@ -4759,15 +4751,6 @@ img {
   flex-wrap: wrap;
   gap: var(--spacing-2);
   align-items: center;
-}
-
-.task-panel-label {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
 }
 
 .task-panel-add-label {

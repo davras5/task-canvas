@@ -205,10 +205,10 @@
   --z-base: 1;
   --z-gantt-bar: 5;
   --z-sticky-sidebar: 10;
-  --z-dropdown: 100;
   --z-sticky: 200;
   --z-panel-backdrop: 200;
   --z-panel: 201;
+  --z-dropdown: 300;
   --z-modal-backdrop: 900;
   --z-modal: 1000;
   --z-toast: 1100;
