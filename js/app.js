@@ -2525,7 +2525,7 @@ function renderMembersView(tasks, project) {
   const paginatedMembers = getPaginatedItems(memberStats, page, pageSize);
 
   return `
-    <div class="members-container">
+    <div class="card members-container">
       <div class="members-header">
         <span class="members-count">${selectedCount > 0 ? `${selectedCount} selected` : `${members.length} Members`}</span>
         <div class="members-actions">
@@ -2748,7 +2748,7 @@ function renderFilesView(project) {
   const paginatedFiles = getPaginatedItems(files, page, pageSize);
 
   return `
-    <div class="files-container">
+    <div class="card files-container">
       <div class="files-header">
         <span class="files-count">${selectedCount > 0 ? `${selectedCount} selected` : `${files.length} Files`}</span>
         <div class="files-actions">
@@ -2872,7 +2872,7 @@ function getFileIcon(fileType) {
 
 function renderFilesEmptyState() {
   return `
-    <div class="files-container">
+    <div class="card files-container">
       <div class="files-empty">
         <div class="files-empty-icon">${icons.file}</div>
         <h3 class="files-empty-title">No files yet</h3>

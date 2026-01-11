@@ -2248,9 +2248,6 @@ img {
    ========================================================================== */
 
 .members-container {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xl);
   overflow: hidden;
 }
 
@@ -3413,9 +3410,6 @@ img {
    ========================================================================== */
 
 .files-container {
-  background: var(--color-bg-primary);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-xl);
   overflow: hidden;
 }
 
