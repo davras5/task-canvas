@@ -5829,3 +5829,45 @@ img {
 .board-card.drag-over-below {
   transition: none;
 }
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-2) var(--spacing-6);
+  background: var(--color-bg-subtle);
+  border-top: 1px solid var(--color-border-default);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.footer-link {
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.footer-link:hover {
+  color: var(--color-text-link);
+}
+
+.footer-separator {
+  color: var(--color-border-default);
+}
+
+.footer-right {
+  color: var(--color-text-tertiary);
+}
+
+.footer-version {
+  font-family: var(--font-family-mono, monospace);
+}
